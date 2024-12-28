@@ -1,0 +1,82 @@
+pipeline {
+    agent any
+
+    environment {
+        imageName = "haisley77/dotori-backend"
+        registryCredential = 'dockerhub_token'
+        dockerImage = ''
+
+        releaseServerAccount = 'ubuntu'
+        releaseServerUri = 'dotori.online'
+        releasePort = '8081'
+    }
+
+
+    stages {
+        stage('Git Clone') {
+            steps {
+                git branch: 'develop-be',
+                    credentialsId: 'github_token',
+                    url: 'https://github.com/haisley77/dotori'
+            }
+        }
+        stage('Jar Build') {
+            steps {
+                dir ('backend') {
+                    sh 'chmod +x ./gradlew'
+                    sh './gradlew clean bootJar'
+                }
+            }
+        }
+        stage('Image Build & DockerHub Push') {
+            steps {
+                dir('backend') {
+                    script {
+                        docker.withRegistry('', registryCredential) {
+                            // 이미지 빌드
+                            sh "docker build -t $imageName:$BUILD_NUMBER ."
+                            sh "docker build -t $imageName:latest ."
+
+                            // Docker Hub에 푸시
+                            sh "docker push $imageName:$BUILD_NUMBER"
+                            sh "docker push $imageName:latest"
+                        }
+                    }
+                }
+            }
+        }
+        stage('DockerHub Pull') {
+            steps {
+                sshagent(['aws_key']) {
+                    sh "ssh -o StrictHostKeyChecking=no $releaseServerAccount@$releaseServerUri 'sudo docker pull $imageName:latest'"
+                }
+            }
+        }
+        stage('Before Service Stop') {
+            steps {
+                sshagent(['aws_key']) {
+                    sh '''
+                    ssh -o StrictHostKeyChecking=no ubuntu@dotori.online
+                    '''
+                }
+            }
+        }
+        stage('Service Start') {
+            steps {
+                sshagent(['aws_key']) {
+                    sh '''
+                        ssh -o StrictHostKeyChecking=no $releaseServerAccount@$releaseServerUri "sudo docker run -i -e TZ=Asia/Seoul -e SPRING_PROFILES_ACTIVE=prod --name codespeed -p $releasePort:$releasePort -d $imageName:latest"
+                    '''
+                }
+            }
+        }
+    }
+    post {
+        success {
+            echo 'Deployment successful!'
+        }
+        failure {
+            echo 'Deployment failed.'
+        }
+    }
+}
