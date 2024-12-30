@@ -41,8 +41,7 @@ export const useOpenViduStore
   const changeCanvasStream = (stream) => {
     canvasStream.value = stream;
   };
-  // 방 세션 설정 정보
-  const session_properties = ref({});
+
   // 커넥션 설정 정보
   const connection_properties = ref({});
 
@@ -71,13 +70,39 @@ export const useOpenViduStore
     bookInfo: null,
   });
 
+  const roomCreationParam = {
+    sessionProperties: null,
+    connectionProperties: null,
+    bookId: null,
+    hostId: null,
+    title: null,
+    password: null,
+    isPublic: null,
+    limitCnt: null,
+  }
+
+  const roomMemberJoinParam = {
+    roomId: null,
+    memberId: null,
+    bookId: null,
+  }
+
+  const roomMemberRemoveParam = {
+    roomId: null,
+    memberId: null,
+  }
+
   const createRoom = (bookmodal) => {
     return new Promise((resolve, reject) => {
       const apiPath = apiRootPath + '/session';
-      roomInitializationParam.value.bookInfo = bookmodal;
-      roomInitializationParam.value.roomInfo = roomInfo.value;
+      roomCreationParam.bookId = bookmodal.bookId;
+      roomCreationParam.hostId = roomInfo.value.hostId;
+      roomCreationParam.title = roomInfo.value.title;
+      roomCreationParam.password = roomInfo.value.password;
+      roomCreationParam.isPublic = roomInfo.value.isPublic;
+      roomCreationParam.limitCnt = roomInfo.value.limitCnt;
 
-      axios.post(apiPath, roomInitializationParam.value,{withCredentials: true})
+      axios.post(apiPath, roomCreationParam,{withCredentials: true})
         .then((response) => {
           roomId.value = response.data.roomId;
           ovToken.value = response.data.token;
@@ -111,11 +136,15 @@ export const useOpenViduStore
     });
   };
 
-  const addRoomMember = (book) => {
+  const joinRoomMember = (book) => {
     return new Promise((resolve, reject) => {
-      const apiPath = apiRootPath + `/add/${roomId.value}/${memberId.value}/${book.bookId}`;
+      const apiPath = apiRootPath + `/join-member`;
 
-      axios.post(apiPath,{withCredentials: true})
+      roomMemberJoinParam.roomId = roomId.value;
+      roomMemberJoinParam.memberId = memberId.value;
+      roomMemberJoinParam.bookId = book.bookId;
+
+      axios.post(apiPath, roomMemberJoinParam, {withCredentials: true})
         .then((response) => {
           bookDetail.value = response.data.bookInfo;
           minRole.value = bookDetail.value.roles[0].roleId;
@@ -130,9 +159,15 @@ export const useOpenViduStore
 
   const removeRoomMember = () => {
     return new Promise((resolve, reject) => {
-      const apiPath = apiRootPath + `/remove/${roomId.value}/${memberId.value}`;
+      const apiPath = apiRootPath + `/remove-member`;
 
-      axios.delete(apiPath,{withCredentials: true})
+      roomMemberRemoveParam.roomId = roomId.value;
+      roomMemberRemoveParam.memberId = memberId.value;
+
+      axios.delete(apiPath,{
+        data: roomMemberRemoveParam,
+        withCredentials: true
+      })
         .then((response) => {
           resolve(response.data);
         })

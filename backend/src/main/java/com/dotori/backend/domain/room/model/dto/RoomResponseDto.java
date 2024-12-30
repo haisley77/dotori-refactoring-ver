@@ -12,7 +12,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class RoomDto {
+public class RoomResponseDto {
 	private Long roomId;
 	private Book book;
 	private Long hostId;
@@ -24,7 +24,7 @@ public class RoomDto {
 	private Boolean isPublic;
 	private String sessionId;
 
-	public RoomDto(Room room) {
+	public RoomResponseDto(Room room) {
 		this.roomId = room.getRoomId();
 		this.book = room.getBook();
 		this.hostId = room.getHostId();

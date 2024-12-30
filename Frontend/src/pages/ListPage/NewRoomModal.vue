@@ -84,7 +84,7 @@
   };
 
   const openViduStore = useOpenViduStore();
-  const {roomInfo, bookDetail, minRole, isHost} = storeToRefs(openViduStore);
+  const {roomInfo, bookDetail, isHost} = storeToRefs(openViduStore);
   const {createRoom, connectToOpenVidu, addRoomMember, memberInfo} = openViduStore;
 
   onMounted(() => {

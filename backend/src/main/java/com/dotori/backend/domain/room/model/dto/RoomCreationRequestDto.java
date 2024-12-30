@@ -11,9 +11,13 @@ import lombok.NoArgsConstructor;
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
-public class RoomInitializationDto {
+public class RoomCreationRequestDto {
 	private Map<String, Object> sessionProperties;
 	private Map<String, Object> connectionProperties;
-	private RoomDto roomInfo;
-	private BookDto bookInfo;
+	private Long bookId;
+	private Long hostId;
+	private String title;
+	private String password;
+	private boolean isPublic;
+	private int limitCnt;
 }

@@ -1,25 +1,20 @@
 package com.dotori.backend.domain.room.service;
 
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 import javax.persistence.EntityNotFoundException;
 import javax.transaction.Transactional;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import com.dotori.backend.domain.room.model.dto.*;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import com.dotori.backend.domain.book.model.dto.BookDto;
 import com.dotori.backend.domain.book.model.entity.Book;
 import com.dotori.backend.domain.book.repository.BookRepository;
 import com.dotori.backend.domain.member.model.entity.Member;
 import com.dotori.backend.domain.member.repository.MemberRepository;
-import com.dotori.backend.domain.room.model.dto.RoomDto;
-import com.dotori.backend.domain.room.model.dto.RoomInitializationDto;
 import com.dotori.backend.domain.room.model.entity.Room;
 import com.dotori.backend.domain.room.model.entity.RoomMember;
 import com.dotori.backend.domain.room.repository.RoomMemberRepository;
@@ -34,180 +29,187 @@ import io.openvidu.java.client.Session;
 import io.openvidu.java.client.SessionProperties;
 
 @Service
+@RequiredArgsConstructor
 @Transactional
 public class RoomServiceImpl implements RoomService {
 
-	private final RoomRepository roomRepository;
-	private final RoomMemberRepository roomMemberRepository;
-	private final BookRepository bookRepository;
+    private final RoomRepository roomRepository;
+    private final RoomMemberRepository roomMemberRepository;
+    private final BookRepository bookRepository;
+    private final MemberRepository memberRepository;
 
-	private final MemberRepository memberRepository;
+    @Override
+    public RoomCreationResponseDto createRoom(OpenVidu openvidu, RoomCreationRequestDto params) {
 
-	@Autowired
-	public RoomServiceImpl(RoomRepository roomRepository,
-		RoomMemberRepository roomMemberRepository,
-		BookRepository bookRepository, MemberRepository memberRepository
-	) {
-		this.roomRepository = roomRepository;
-		this.roomMemberRepository = roomMemberRepository;
-		this.bookRepository = bookRepository;
-		this.memberRepository = memberRepository;
-	}
+        // 책을 조회한다.
+        Book book = bookRepository.findById(params.getBookId())
+                .orElseThrow(() -> new EntityNotFoundException("해당하는 책 정보 없음"));
 
-	@Override
-	public Map<String, String> createRoom(OpenVidu openvidu, RoomInitializationDto params) throws Exception {
-		// 세션을 생성합니다.
-		Session session = openvidu.createSession(
-			SessionProperties.fromJson(params.getSessionProperties()).build());
+        // openvidu를 최신화한다.
+        updateOpenvidu(openvidu);
 
-		if (session == null)
-			throw new RuntimeException("세션 생성 중 문제 발생");
+        Session session = null;
+        Connection connection = null;
+        try {
+            // 세션을 생성한다.
+            session = openvidu.createSession(SessionProperties.fromJson(params.getSessionProperties()).build());
+        } catch (OpenViduJavaClientException | OpenViduHttpException e) {
+            throw new RuntimeException("openvidu 세션 생성 중 문제 발생");
+        }
 
-		List<RoomMember> roomMembers = new ArrayList<>();
+        try {
+            // 커넥션을 생성한다.
+            connection = session.createConnection(ConnectionProperties.fromJson(params.getConnectionProperties()).build());
+        } catch (OpenViduJavaClientException | OpenViduHttpException e) {
+            throw new RuntimeException("openvidu 커넥션 생성 중 문제 발생");
+        }
 
-		BookDto bookInfo = params.getBookInfo();
-		Book book = bookRepository.findById(bookInfo.getBookId()).orElseThrow(
-			() -> new EntityNotFoundException("해당하는 책 정보를 찾을 수 없습니다.")
-		);
+        // 대기방을 생성한다.
+        Room room = Room.create(params,book, session.getSessionId());
+        Room savedRoom = roomRepository.save(room);
 
-		RoomDto roomInfo = params.getRoomInfo();
-		Room room = Room.builder()
-			.book(book)
-			.roomMembers(roomMembers)
-			.hostId(roomInfo.getHostId())
-			.title(roomInfo.getTitle())
-			.password(roomInfo.getPassword())
-			.isRecording(roomInfo.getIsRecording())
-			.joinCnt(roomInfo.getJoinCnt())
-			.limitCnt(book.getRoleCnt())
-			.isPublic(roomInfo.getIsPublic())
-			.sessionId(session.getSessionId())
-			.build();
+        // roomId와 token을 반환한다.
+        RoomCreationResponseDto roomCreationResponseDto = new RoomCreationResponseDto(savedRoom.getRoomId(),connection.getToken());
 
-		// 세션과 커넥션을 생성합니다.
-		Connection connection = session.createConnection(
-			ConnectionProperties.fromJson(params.getConnectionProperties()).build());
-		if (connection == null)
-			throw new RuntimeException("토큰 생성 중 문제 발생");
+        return roomCreationResponseDto;
+    }
 
-		// 방 id와 token 데이터를 반환합니다.
-		Map<String, String> resultData = new HashMap<>();
-		resultData.put("roomId", String.valueOf(roomRepository.save(room).getRoomId()));
-		resultData.put("token", connection.getToken());
+    @Override
+    public Session findSessionByRoomId(OpenVidu openvidu, Long roomId) {
 
-		return resultData;
-	}
+        // openvidu를 최신화한다.
+        updateOpenvidu(openvidu);
 
-	@Override
-	public Session findSessionByRoomId(OpenVidu openvidu, Long roomId) {
-		// 방 id 에 해당하는 방을 가져옵니다.
-		Room room = roomRepository.findById(roomId).orElseThrow(
-			() -> new EntityNotFoundException("해당하는 방을 찾을 수 없습니다.")
-		);
-		return openvidu.getActiveSession(room.getSessionId());
-	}
+        // 방을 조회한다.
+        Room room = roomRepository.findById(roomId).orElseThrow(
+                () -> new EntityNotFoundException("해당하는 방을 찾을 수 없습니다.")
+        );
 
-	public List<Room> getAllRooms() {
-		return roomRepository.findAllByOrderByIsRecordingAscCreatedAtDesc().orElseThrow(
-			() -> new EntityNotFoundException("방 없음")
-		);
-	}
+        return openvidu.getActiveSession(room.getSessionId());
+    }
 
-	@Override
-	public String createConnection(OpenVidu openvidu, Session session,
-		Map<String, Object> connectionProperties) throws OpenViduJavaClientException, OpenViduHttpException {
-		// 방 참여자는 세션과 커넥션을 생성합니다.
-		Connection connection = session.createConnection(
-			ConnectionProperties.fromJson(connectionProperties).build());
-		if (connection == null)
-			throw new RuntimeException("토큰 생성 중 문제 발생");
-		// 토큰을 반환합니다.
-		return connection.getToken();
-	}
+    public List<Room> getAllRooms() {
+        return roomRepository.findAllByOrderByIsRecordingAscCreatedAtDesc()
+                .orElseThrow(() -> new EntityNotFoundException("방 조회 중 문제 발생")
+        );
+    }
 
-	@Override
-	public void checkJoinPossible(OpenVidu openvidu, Long roomId) {
-		// 방 id 에 해당하는 방을 가져옵니다.
-		Room room = roomRepository.findById(roomId).orElseThrow(
-			() -> new EntityNotFoundException("해당하는 방을 찾을 수 없습니다.")
-		);
+    @Override
+    public String createConnection(OpenVidu openvidu, Session session,
+                                   Map<String, Object> connectionProperties) throws OpenViduJavaClientException, OpenViduHttpException {
+        // 방 참여자는 세션과 커넥션을 생성합니다.
+        Connection connection = session.createConnection(
+                ConnectionProperties.fromJson(connectionProperties).build());
+        if (connection == null)
+            throw new RuntimeException("토큰 생성 중 문제 발생");
+        // 토큰을 반환합니다.
+        return connection.getToken();
+    }
 
-		// // 방에 연결된 유효한 connection 리스트를 openvidu 서버에서 불러옵니다.
-		// List<Connection> activeConnections = openvidu.getActiveSession(room.getSessionId()).getActiveConnections();
-		// return activeConnections.size() < room.getLimitCnt();
+    private void checkJoinPossible(OpenVidu openvidu, Room room) {
 
-		// db와 openvidu 서버 둘 다 확인하는 게 맞지만, 일단 해피케이스
-		if (room.getJoinCnt() >= room.getLimitCnt()){
-			throw new RuntimeException("인원 초과로 참여 불가");
-		};
-	}
+        // 방에 연결된 유효한 connection 리스트를 openvidu 서버에서 불러온다.
+        List<Connection> activeConnections = openvidu.getActiveSession(room.getSessionId()).getActiveConnections();
 
-	@Override
-	public void addMemberToRoom(Long roomId, Long memberId) {
-		// 방 id에 해당하는 방을 가져옵니다.
-		Room room = roomRepository.findById(roomId).orElseThrow(
-			() -> new EntityNotFoundException("해당하는 방을 찾을 수 없습니다.")
-		);
+        if (activeConnections.size() >= room.getLimitCnt()) {
+            throw new RuntimeException("인원 초과로 참여 불가");
+        }
 
-		// member id에 해당하는 멤버를 방 참여 멤버로 등록합니다.
-		Member member = memberRepository.findById(memberId).get();
-		RoomMember roomMember = RoomMember.builder()
-			.member(member)
-			.room(room)
-			.build();
-		roomMemberRepository.save(roomMember);
+        if (room.getJoinCnt() >= room.getLimitCnt()) {
+            throw new RuntimeException("인원 초과로 참여 불가");
+        }
 
-		// 방 참여 인원을 갱신합니다.
-		room.setJoinCnt(room.getJoinCnt() + 1);
-		roomRepository.save(room);
-	}
+    }
 
-	@Override
-	public void removeMemberFromRoom(OpenVidu openvidu, Long roomId, Long memberId) {
-		// 방 참여 멤버를 DB에서 지웁니다.
-		RoomMember roomMember = roomMemberRepository.findByRoomRoomIdAndMemberMemberId(roomId,
-			memberId).orElseThrow(
-			() -> new EntityNotFoundException("해당하는 방 참여자를 찾을 수 없습니다.")
-		);
+    @Override
+    public void joinMemberToRoom(OpenVidu openvidu, Long roomId, Long memberId, Long bookId) {
 
-		roomMemberRepository.delete(roomMember);
+        // 방을 조회한다.
+        Room room = roomRepository.findById(roomId)
+                .orElseThrow(() -> new EntityNotFoundException("해당하는 방을 찾을 수 없습니다."));
 
-		// 방 id 에 해당하는 방을 가져옵니다.
-		Room room = roomRepository.findById(roomId).orElseThrow(
-			() -> new EntityNotFoundException("해당하는 방을 찾을 수 없습니다.")
-		);
+        // 참여 가능 방인지 확인한다.
+        checkJoinPossible(openvidu, room);
 
-		// 방 참여 인원을 갱신합니다.
-		room.setJoinCnt(room.getJoinCnt() - 1);
+        // openvidu를 최신화한다.
+        updateOpenvidu(openvidu);
 
-		// 방에 더이상 남아있는 인원이 없다면 방을 삭제합니다.
-		if (room.getJoinCnt() == 0) {
-			roomRepository.delete(room);
-		}
-	}
+        // 멤버를 방에 추가한다.
+        Member member = memberRepository.findById(memberId).get();
+        RoomMember roomMember = new RoomMember(member, room);
+        roomMemberRepository.save(roomMember);
 
-	@Override
-	public void updateRoom(Long roomId, RoomDto roomInfo) {
-		Room room = roomRepository.findById(roomId).orElseThrow(
-			() -> new EntityNotFoundException("해당하는 방이 존재하지 않습니다.")
-		);
-		room.setIsRecording(true);
-		roomRepository.save(room);
-	}
+        // 참여 인원을 갱신한다.
+        Room.updateJoinCnt(room, room.getJoinCnt() + 1);
 
-	@Override
-	public Room getRoom(Long roomId) {
-		return roomRepository.findById(roomId).orElseThrow(
-			() -> new EntityNotFoundException(("해당하는 방이 존재하지 않습니다."))
-		);
-	}
+    }
 
-	@Override
-	public void removeExpiredRooms(List<Session> activeSessions) {
-		List<String> activeSessionIdList = activeSessions.stream()
-			.map(Session::getSessionId)
-			.collect(Collectors.toList());
-		roomRepository.deleteAllBySessionIdNotIn(activeSessionIdList);
-	}
+    @Override
+    public RoomRemovalResponseDto removeMemberFromRoom(OpenVidu openvidu, Long roomId, Long memberId) {
+
+        // openvidu를 최신화한다.
+        updateOpenvidu(openvidu);
+
+        // 방 참여 멤버를 DB에서 지운다.
+        RoomMember roomMember = roomMemberRepository.findByRoomRoomIdAndMemberMemberId(roomId, memberId)
+                .orElseThrow(() -> new EntityNotFoundException("해당하는 방 참여자를 찾을 수 없습니다.")
+        );
+        roomMemberRepository.delete(roomMember);
+
+        // 방을 조회한다.
+        Room room = roomRepository.findById(roomId).orElseThrow(
+                () -> new EntityNotFoundException("해당하는 방을 찾을 수 없습니다.")
+        );
+
+        // 방 인원을 갱신한다.
+        Room.updateJoinCnt(room, room.getJoinCnt() - 1);
+
+        // 방에 남은 인원이 없으면 제거한다.
+        if (room.getJoinCnt() == 0) {
+            roomRepository.delete(room);
+        }
+
+        RoomRemovalResponseDto roomRemovalResponseDto = new RoomRemovalResponseDto(memberId);
+        return roomRemovalResponseDto;
+    }
+
+    @Override
+    public void updateRoom(Long roomId, RoomResponseDto roomInfo) {
+        Room room = roomRepository.findById(roomId).orElseThrow(
+                () -> new EntityNotFoundException("해당하는 방이 존재하지 않습니다.")
+        );
+        room.setIsRecording(true);
+        roomRepository.save(room);
+    }
+
+    @Override
+    public Room getRoom(Long roomId) {
+        return roomRepository.findById(roomId).orElseThrow(
+                () -> new EntityNotFoundException(("해당하는 방이 존재하지 않습니다."))
+        );
+    }
+
+    @Override
+    public void removeExpiredRooms(OpenVidu openvidu) {
+
+        // openvidu를 최신화한다.
+        updateOpenvidu(openvidu);
+
+        List<Session> activeSessions = openvidu.getActiveSessions();
+
+        List<String> activeSessionIdList = activeSessions.stream()
+                .map(Session::getSessionId)
+                .collect(Collectors.toList());
+
+        roomRepository.deleteAllBySessionIdNotIn(activeSessionIdList);
+    }
+
+    private void updateOpenvidu(OpenVidu openvidu) {
+        try {
+            openvidu.fetch();
+        } catch (OpenViduJavaClientException | OpenViduHttpException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
 }
