@@ -20,6 +20,7 @@ import javax.persistence.Table;
 import com.dotori.backend.common.entity.BaseTimeEntity;
 import com.dotori.backend.domain.book.model.entity.Book;
 
+import com.dotori.backend.domain.room.model.dto.RoomCreationRequestDto;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -68,19 +69,23 @@ public class Room extends BaseTimeEntity {
 	@Column(length = 50, name = "session_id")
 	private String sessionId;
 
-	@Builder
-	public Room(Book book, List<RoomMember> roomMembers, Long hostId, String title, String password,
-		Boolean isRecording, Integer joinCnt, Integer limitCnt, Boolean isPublic, String sessionId) {
-		this.book = book;
-		this.roomMembers = roomMembers;
-		this.hostId = hostId;
-		this.title = title;
-		this.password = password;
-		this.isRecording = isRecording;
-		this.joinCnt = joinCnt;
-		this.limitCnt = limitCnt;
-		this.isPublic = isPublic;
-		this.sessionId = sessionId;
+	public static Room create(RoomCreationRequestDto roomCreationRequestDto, Book book, String sessionId) {
+		Room room = new Room();
+		room.book = book;
+		room.hostId = roomCreationRequestDto.getHostId();
+		room.title = roomCreationRequestDto.getTitle();
+		room.password = roomCreationRequestDto.getPassword();
+		room.isRecording = false;
+		room.joinCnt = 0;
+		room.limitCnt = roomCreationRequestDto.getLimitCnt();
+		room.isPublic = roomCreationRequestDto.isPublic();
+		room.sessionId = sessionId;
+		return room;
+	}
+
+	public static Room updateJoinCnt(Room room, int cnt) {
+		room.setJoinCnt(cnt);
+		return room;
 	}
 
 }
