@@ -154,7 +154,7 @@
           .then(() => {
             connectToOpenVidu()
               .then(() => {
-                addRoomMember(room.book)
+                joinRoomMember(room.book)
                   .then(() => {
                     openViduStore.roomId = room.roomId;
                     moveWaitingRoom(room);
