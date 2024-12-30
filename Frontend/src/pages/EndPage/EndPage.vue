@@ -51,6 +51,11 @@
   const router = useRouter();
   const ovstore = useOpenViduStore();
 
+  const removeMemberParam = {
+    roomId: null,
+    memberId: null,
+  };
+
   const moveToMainPage = () => {
     ovstore.session.disconnect();
     removeMemberFromRoom();
@@ -63,8 +68,14 @@
   };
 
   const removeMemberFromRoom = () => {
-    return axios.delete(`/api/rooms/remove/${ovstore.roomId}/${ovstore.memberId}`);
+    removeMemberParam.roomId = ovstore.roomId;
+    removeMemberParam.memberId = ovstore.memberId;
+
+    return axios.delete(`/api/rooms/remove-member`, {
+      data: removeMemberParam,
+    });
   };
+
 
   onMounted(() => {
     const publisher = ovstore.OV.initPublisher(undefined, {
