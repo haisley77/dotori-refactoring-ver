@@ -4,10 +4,12 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.Map;
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class RoomCreationResponseDto {
-    public Long roomId;
-    public String token;
+public class RoomConnectionRequestDto {
+    private Long roomId;
+    private Map<String, Object> connectionProperties;
 }

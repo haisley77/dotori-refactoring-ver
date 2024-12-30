@@ -6,8 +6,11 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import javax.annotation.PostConstruct;
+import javax.persistence.EntityNotFoundException;
 
+import com.dotori.backend.domain.member.model.entity.Member;
 import com.dotori.backend.domain.room.model.dto.*;
+import com.dotori.backend.domain.room.repository.RoomRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -47,23 +50,34 @@ public class RoomController {
 	private final RoomService roomService;
 	private final BookService bookService;
 	private final SceneService sceneService;
+	private final RoomRepository roomRepository;
 
 	@PostConstruct
 	public void init() {
 		this.openvidu = new OpenVidu(OPENVIDU_URL, OPENVIDU_SECRET);
 	}
 
-
 	@PostMapping("/session")
 	public ResponseEntity<RoomCreationResponseDto> create(
-		@RequestBody(required = false) RoomCreationRequestDto requestDto) {
+			@RequestBody RoomCreationRequestDto requestDto) {
 		RoomCreationResponseDto result = roomService.createRoom(openvidu, requestDto);
 		return ResponseEntity.ok(result);
 	}
 
-	// 삭제는 PathVariable로 하면 안되지..
+	@PostMapping("/connection")
+	public ResponseEntity<RoomConnectionResponseDto> connectionByRoomId(
+			@RequestBody RoomConnectionRequestDto requestDto) {
+
+		String token = roomService.createConnection(openvidu, requestDto);
+
+		RoomConnectionResponseDto result = new RoomConnectionResponseDto(requestDto.getRoomId(), token);
+
+		return ResponseEntity.ok(result);
+	}
+
 	@DeleteMapping("/remove-member")
-	public ResponseEntity<RoomRemovalResponseDto> removeRoomMember(RoomRemovalRequestDto requestDto) {
+	public ResponseEntity<RoomRemovalResponseDto> removeRoomMember(
+			@RequestBody RoomRemovalRequestDto requestDto) {
 		RoomRemovalResponseDto result = roomService.removeMemberFromRoom(openvidu, requestDto.roomId, requestDto.memberId);
 		return ResponseEntity.ok(result);
 	}
@@ -87,9 +101,10 @@ public class RoomController {
 	}
 
 	@PostMapping("/join-member")
-	public ResponseEntity<RoomMemberJoinResponseDto> joinRoomMember(RoomMemberJoinRequestDto requestDto) {
+	public ResponseEntity<RoomMemberJoinResponseDto> joinRoomMember(
+			@RequestBody RoomMemberJoinRequestDto requestDto) {
 
-		roomService.joinMemberToRoom(openvidu, requestDto.roomId, requestDto.memberId, requestDto.bookId);
+		Member member = roomService.joinMemberToRoom(openvidu, requestDto.roomId, requestDto.memberId, requestDto.bookId);
 
 		BookDetailDto bookInfo = BookDetailDto.builder()
 				.book(bookService.getBook(requestDto.bookId))
@@ -97,32 +112,31 @@ public class RoomController {
 				.scenes(sceneService.getSceneDetailsByBookId(requestDto.bookId))
 				.build();
 
-		RoomMemberJoinResponseDto result = new RoomMemberJoinResponseDto(requestDto.memberId, bookInfo);
+		RoomMemberJoinResponseDto result = new RoomMemberJoinResponseDto(member.getMemberId(), bookInfo);
 
 		return ResponseEntity.ok(result);
 	}
 
-	@PatchMapping("/update/{roomId}")
-	public ResponseEntity<Map<String, String>> updateRoom(@PathVariable("roomId") Long roomId,
-		@RequestBody(required = true) RoomResponseDto roomInfo) {
-		Map<String, String> resultData = new HashMap<>();
-		try {
-			openvidu.fetch();
-			roomService.updateRoom(roomId, roomInfo);
-			resultData.put("roomId", String.valueOf(roomId));
-			return ResponseEntity.ok(resultData);
-		} catch (Exception e) {
-			resultData.put("message", e.getMessage());
-			return new ResponseEntity<>(resultData, HttpStatus.INTERNAL_SERVER_ERROR);
+	@PatchMapping("/update-room")
+	public ResponseEntity<RoomUpdateResponseDto> updateRoom(
+			@RequestBody RoomUpdateRequestDto requestDto) {
 
-		}
+		Room room = roomService.updateRoom(openvidu, requestDto.getRoomId());
 
+		RoomUpdateResponseDto result = new RoomUpdateResponseDto(room.getRoomId());
+
+		return ResponseEntity.ok(result);
 	}
 
 	@GetMapping("/{roomId}")
 	public ResponseEntity<RoomResponseDto> getRoom(@PathVariable("roomId") Long roomId) {
-		RoomResponseDto roomInfo = new RoomResponseDto(roomService.getRoom(roomId));
-		return ResponseEntity.ok(roomInfo);
+
+		Room room = roomRepository.findById(roomId)
+				.orElseThrow(() -> new EntityNotFoundException(("해당하는 방이 존재하지 않습니다.")));
+
+		RoomResponseDto result = new RoomResponseDto(room);
+
+		return ResponseEntity.ok(result);
 	}
 
 }

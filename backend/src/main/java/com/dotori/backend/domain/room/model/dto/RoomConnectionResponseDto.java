@@ -5,9 +5,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Data
-@NoArgsConstructor
 @AllArgsConstructor
-public class RoomCreationResponseDto {
-    public Long roomId;
-    public String token;
+public class RoomConnectionResponseDto {
+    private Long roomId;
+    private String token;
 }

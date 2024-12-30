@@ -19,56 +19,58 @@ export const useOpenViduStore
   const apiRootPath = '/api/rooms';
 
   const roomId = ref(0);
-  const memberId = ref(20);
+  const memberId = ref(0);
+
+  const isLoggedIn = ref(false);
+  const subscribers = ref([]);
+  const mainStreamManager = ref();
+  var mainStreamManagerReal = null;
+  const isPublished = ref(false);
+
+  const isHost = ref(false);
+  const onAir = ref(0);
+
+  const minRole = ref();
+  const canvasStream = ref();
+
+  const changeCanvasStream = (stream) => {
+    canvasStream.value = stream;
+  }
+
+  // 커넥션 설정 정보
+  const connection_properties = ref({});
+
   const memberInfo = ref({
     memberId: 0,
     nickName: '',
     email: '',
     profileImg: null,
   });
-  const isLoggedIn = ref(false);
-  const subscribers = ref([]);
-  const mainStreamManager = ref();
-  var mainStreamManagerReal = null;
-  const isPublished = ref(false);
-  // 방장인지 아닌지 판단
-  const isHost = ref(false);
-  const onAir = ref(0);
-  //나중에 역할 선택에 따라 변경할 부분
-  const minRole = ref();
-  const canvasStream = ref();
-
-  const changeCanvasStream = (stream) => {
-    canvasStream.value = stream;
-  };
-
-  // 커넥션 설정 정보
-  const connection_properties = ref({});
 
   // 방 설정 정보
   const roomInfo = ref({
-    hostId: 30,
+    hostId: 0,
     title: null,
     password: null,
     isRecording: false,
     joinCnt: 0,
     limitCnt: 0,
     isPublic: true,
-  });
+  })
 
   // 책, 역할 설정 정보
   const bookDetail = ref({
     book: {},
     roles: [],
     scenes: [],
-  });
+  })
 
   const roomInitializationParam = ref({
     sessionProperties: null,
     connectionProperties: null,
     roomInfo: null,
     bookInfo: null,
-  });
+  })
 
   const roomCreationParam = {
     sessionProperties: null,
@@ -90,6 +92,15 @@ export const useOpenViduStore
   const roomMemberRemoveParam = {
     roomId: null,
     memberId: null,
+  }
+
+  const roomConnectionParam = {
+    roomId: null,
+    connectionProperties: null,
+  }
+
+  const roomUpdateParam = {
+    roomId: null,
   }
 
   const createRoom = (bookmodal) => {
@@ -117,16 +128,19 @@ export const useOpenViduStore
 
   const getConnectionToken = (room) => {  //방에 입장할 때 사용되는 코드
     return new Promise((resolve, reject) => {
-      roomInitializationParam.value.bookInfo = room.book;
-      roomInitializationParam.value.roomInfo = room;
-      roomInfo.hostId = room.hostId;//방 정보에 호스트 아이디가 존재한다. 저장한다
-      isHost.value = false;//입장한 사람은 호스트가 아니니까 false
-      const apiPath = apiRootPath + `/connection/${room.roomId}`;
 
-      axios.post(apiPath, connection_properties.value,{withCredentials: true})
+      const apiPath = apiRootPath + `/connection`;
+
+      roomConnectionParam.roomId = room.roomId;
+
+      axios.post(apiPath, roomConnectionParam,{withCredentials: true})
         .then((response) => {
           roomId.value = response.data.roomId;
           ovToken.value = response.data.token;
+
+          roomInfo.hostId = room.hostId;
+          isHost.value = false;
+
           resolve(response.data);
         })
         .catch((error) => {
@@ -180,13 +194,14 @@ export const useOpenViduStore
 
   const updateRoom = (isRecording) => {
     return new Promise((resolve, reject) => {
-      const apiPath = apiRootPath + `/update/${roomId.value}`;
+      const apiPath = apiRootPath + `/update-room`;
 
-      roomInfo.value.isRecording = isRecording;
+      roomUpdateParam.roomId = roomId.value;
 
-      axios.patch(apiPath, roomInfo.value, {withCredentials: true})
+      axios.patch(apiPath, roomUpdateParam, {withCredentials: true})
         .then((response) => {
           roomId.value = response.data.roomId;
+          roomInfo.value.isRecording = isRecording;
           resolve(response.data);
         })
         .catch((error) => {
@@ -303,7 +318,7 @@ export const useOpenViduStore
     roomInitializationParam,
     createRoom,
     connectToOpenVidu,
-    addRoomMember,
+    joinRoomMember,
     updateRoom,
     publish,
     subscribers, mainStreamManager, OV,

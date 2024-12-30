@@ -85,7 +85,7 @@
 
   const openViduStore = useOpenViduStore();
   const {roomInfo, bookDetail, isHost} = storeToRefs(openViduStore);
-  const {createRoom, connectToOpenVidu, addRoomMember, memberInfo} = openViduStore;
+  const {createRoom, connectToOpenVidu, joinRoomMember, memberInfo} = openViduStore;
 
   onMounted(() => {
     fetchBookRoles();
@@ -153,9 +153,10 @@
       .then(() => {
         connectToOpenVidu()
           .then(() => {
-            addRoomMember(props.bookmodal)
+            joinRoomMember(props.bookmodal)
               .then(() => {
                 roomInfo.value.joinCnt++;
+
                 moveWaitingRoom();
                 $q.loading.hide();
               })
