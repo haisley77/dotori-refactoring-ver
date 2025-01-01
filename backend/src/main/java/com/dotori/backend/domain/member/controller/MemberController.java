@@ -1,15 +1,15 @@
 package com.dotori.backend.domain.member.controller;
 
 import java.io.IOException;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 import javax.persistence.EntityNotFoundException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import com.dotori.backend.common.exception.ErrorCode;
+import com.dotori.backend.common.exception.MemberException;
+import com.dotori.backend.domain.member.model.dto.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
@@ -23,9 +23,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.dotori.backend.domain.member.model.dto.GetMemberVideosResponse;
-import com.dotori.backend.domain.member.model.dto.ProfileImageUpdateRequest;
-import com.dotori.backend.domain.member.model.dto.ProfileImageUpdateResponse;
 import com.dotori.backend.domain.member.model.entity.Member;
 import com.dotori.backend.domain.member.repository.MemberRepository;
 import com.dotori.backend.domain.member.service.JwtService;
@@ -58,32 +55,25 @@ public class MemberController {
 
 	@GetMapping("/detail")
 	public ResponseEntity<?> getMemberInfo(HttpServletRequest request) {
-		Optional<String> jwtdetail = jwtService.extractEmailFromAccessToken(request);
 
-		if (jwtdetail.isPresent()) {
-			Optional<Member> emaildetail = memberRepository.findByEmail(jwtdetail.get());
+		String jwtDetail = jwtService.extractEmailFromAccessToken(request)
+				.orElseThrow(() -> new MemberException(ErrorCode.ACCESS_TOKEN_NOT_FOUND));
 
-			if (emaildetail.isPresent()) {
-				Member member = emaildetail.get();
-				Map<String, Object> memberInfo = new HashMap<>();
-				memberInfo.put("nickName", member.getNickname());
-				memberInfo.put("email", member.getEmail());
-				memberInfo.put("memberId", member.getMemberId());
-				memberInfo.put("profileImg", member.getProfileImg());
+		Member member = memberRepository.findByEmail(jwtDetail)
+				.orElseThrow(() -> new MemberException(ErrorCode.MEMBER_NOT_FOUND));
 
-				return ResponseEntity.ok(memberInfo);
-			} else {
-				return ResponseEntity.status(404).body("가입된 사용자데이터를 찾을수없습니다.");
-			}
-		} else {
-			return ResponseEntity.status(400).body("유효한 토큰을 찾을수없습니다");
-		}
+		MemberResponseDto result = new MemberResponseDto(member);
+		return ResponseEntity.ok(result);
 	}
 
 	@GetMapping("/{memberId}/videos")
-	public ResponseEntity<GetMemberVideosResponse> getMemberVideos(@PathVariable(name = "memberId") Long memberId) {
+	public ResponseEntity<GetMemberVideosResponse> getMemberVideos(
+			@PathVariable(name = "memberId") Long memberId) {
 
-		return ResponseEntity.ok().body(new GetMemberVideosResponse(memberService.getMemberVideos(memberId)));
+		List<MemberVideoDto> memberVideos = memberService.getMemberVideos(memberId);
+
+		GetMemberVideosResponse result = new GetMemberVideosResponse(memberVideos);
+		return ResponseEntity.ok().body(result);
 	}
 
 	@GetMapping("/reaccesstoken")
