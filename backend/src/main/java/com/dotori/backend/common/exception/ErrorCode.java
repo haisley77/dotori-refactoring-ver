@@ -4,11 +4,10 @@ import lombok.Getter;
 
 @Getter
 public enum ErrorCode {
-    // Buisiness
-    NOT_FOUND("B-001", "Entity Not Found"),
 
     // Member
     MEMBER_NOT_FOUND("M-001", "Member Not Found"),
+    ACCESS_TOKEN_NOT_FOUND("M-002", "AccessToken Not Found"),
 
     // Room
     ROOM_NOT_FOUND("R-001", "Room Not Found"),
