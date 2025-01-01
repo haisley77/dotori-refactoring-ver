@@ -4,20 +4,17 @@ import java.util.Map;
 
 import com.dotori.backend.domain.book.model.dto.BookDto;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
-@Getter
-@NoArgsConstructor
-@AllArgsConstructor
+@Data
+@RequiredArgsConstructor
 public class RoomCreationRequestDto {
-	private Map<String, Object> sessionProperties;
-	private Map<String, Object> connectionProperties;
-	private Long bookId;
-	private Long hostId;
-	private String title;
-	private String password;
-	private boolean isPublic;
-	private int limitCnt;
+	private final Map<String, Object> sessionProperties;
+	private final Map<String, Object> connectionProperties;
+	private final Long bookId;
+	private final Long hostId;
+	private final String title;
+	private final String password;
+	private final boolean isPublic;
+	private final int limitCnt;
 }

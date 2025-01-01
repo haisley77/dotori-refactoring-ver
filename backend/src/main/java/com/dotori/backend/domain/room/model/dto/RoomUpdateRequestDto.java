@@ -4,10 +4,10 @@ import com.dotori.backend.domain.book.model.entity.Book;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.RequiredArgsConstructor;
 
 @Data
-@NoArgsConstructor
-@AllArgsConstructor
+@RequiredArgsConstructor
 public class RoomUpdateRequestDto {
-    private Long roomId;
+    private final Long roomId;
 }

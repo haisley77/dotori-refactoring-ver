@@ -8,6 +8,6 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class RoomCreationResponseDto {
-    public Long roomId;
-    public String token;
+    private Long roomId;
+    private String token;
 }
