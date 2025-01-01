@@ -22,7 +22,13 @@ public enum ErrorCode {
     // Openvidu
     OPENVIDU_CONNECTION_NOT_CREATED("O-001", "Openvidu Connection Not Created"),
     OPENVIDU_SESSION_NOT_CREATED("O-002", "Openvidu Session Not Created"),
-    OPENVIDU_NOT_FETCHED("O-003", "Openvidu Not Fetched");
+    OPENVIDU_NOT_FETCHED("O-003", "Openvidu Not Fetched"),
+
+    // Video
+    CHUNK_FILES_NOT_UPLOADED("V-001", "Chunk Files Not Upload"),
+    CHUNK_FILES_NOT_MERGED("V-002", "Chunk Files Not Merged"),
+    VIDEO_NOT_MERGED("V-003", "Video Not Merged"),
+    VIDEO_NOT_FOUND("V-004", "Video Not Found");
 
     private final String code;
     private final String message;

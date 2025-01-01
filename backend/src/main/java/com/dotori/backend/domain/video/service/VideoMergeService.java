@@ -5,6 +5,8 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.dotori.backend.common.exception.ErrorCode;
+import com.dotori.backend.common.exception.VideoException;
 import org.bytedeco.javacv.FFmpegFrameGrabber;
 import org.bytedeco.javacv.FFmpegFrameRecorder;
 import org.bytedeco.javacv.Frame;
@@ -33,9 +35,8 @@ public class VideoMergeService {
 		try {
 			savedPath = merge(videoMergeRequest);
 		} catch (FrameGrabber.Exception | FrameRecorder.Exception e) {
-			log.error("영상 병합 중 exception 발생", e);
-			e.printStackTrace();
-			throw new RuntimeException(e);
+			log.error("[videoMerge] failed", e);
+			throw new VideoException(ErrorCode.VIDEO_NOT_MERGED);
 		}
 		return savedPath;
 	}

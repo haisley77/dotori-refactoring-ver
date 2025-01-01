@@ -6,6 +6,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 
+import com.dotori.backend.common.exception.ErrorCode;
+import com.dotori.backend.common.exception.VideoException;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -39,6 +41,7 @@ public class VideoUploadService {
 			deleteChunkFiles(tempDirectory);
 			return uploadedFile;
 		}
+
 		return null;
 	}
 
@@ -52,13 +55,11 @@ public class VideoUploadService {
 				log.info("{} directory is created", savedDirectory);
 			}
 			Files.write(savedDirectory.resolve(chunkFileName), chunkFile.getBytes());
-		} catch (RuntimeException e) {
-			log.info("chunk file upload failed", e);
-			throw e;
-		} catch (IOException e) {
-			log.info("chunk file upload failed", e);
-			throw new RuntimeException(e.getMessage());
+		} catch (RuntimeException | IOException e) {
+			log.info("[uploadChunkFile] failed", e);
+			throw new VideoException(ErrorCode.CHUNK_FILES_NOT_UPLOADED);
 		}
+
 		return savedDirectory.toFile();
 	}
 
@@ -93,9 +94,8 @@ public class VideoUploadService {
 				);
 			}
 		} catch (IOException e) {
-			log.info("[mergeChunkFiles] failed");
-			log.info("exception thrown: ", e);
-			throw new RuntimeException(e);
+			log.info("[mergeChunkFiles] failed", e);
+			throw new VideoException(ErrorCode.CHUNK_FILES_NOT_UPLOADED);
 		}
 		log.info("[mergeChunkFiles] completed scene video is merged");
 		return output;

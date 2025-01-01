@@ -49,9 +49,9 @@ public class GlobalExceptionHandler {
 	}
 
 	@ExceptionHandler(BusinessException.class)
-	public ResponseEntity<ErrorResponse> customExceptionHandler(
+	public ResponseEntity<ErrorResponse> businessExceptionHandler(
 			HttpServletRequest request, BusinessException businessException) {
-		// 커스텀 예외 Logging
+		// 비즈니스 예외 Logging
 		printCustomException(businessException);
 
 		// 서버 내부 에러 메시지를 클라이언트에 노출하지 않는다. (커스텀 에러 코드로 처리)
@@ -60,6 +60,19 @@ public class GlobalExceptionHandler {
 			INTERNAL_SERVER_ERROR
 		);
 
+	}
+
+	@ExceptionHandler(VideoException.class)
+	public ResponseEntity<ErrorResponse> videoExceptionHandler(
+			HttpServletRequest request, VideoException videoException) {
+		// 비디오 처리 예외 Logging (서버에서는 Video 처리 단계 별 log 출력하도록 설정한다.)
+		printCustomException(videoException);
+
+		// 서버 내부 에러 메시지를 클라이언트에 노출하지 않는다. (커스텀 에러 코드로 처리)
+		return new ResponseEntity<>(
+				ErrorResponse.of(videoException.getErrorCode().toString(), request.getRequestURI()),
+				INTERNAL_SERVER_ERROR
+		);
 	}
 
 	@ExceptionHandler(RuntimeException.class)

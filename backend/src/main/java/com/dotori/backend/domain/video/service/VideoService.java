@@ -8,6 +8,8 @@ import java.util.stream.Collectors;
 
 import javax.persistence.EntityNotFoundException;
 
+import com.dotori.backend.common.exception.BusinessException;
+import com.dotori.backend.common.exception.ErrorCode;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -61,7 +63,7 @@ public class VideoService {
 	public void saveSceneVideo(SceneVideoSaveRequest sceneVideoSaveRequest) {
 		log.info("[saveSceneVideo] called");
 		Room room = roomRepository.findById(sceneVideoSaveRequest.getRoomId())
-			.orElseThrow(EntityNotFoundException::new);
+				.orElseThrow(() -> new BusinessException(ErrorCode.ROOM_NOT_FOUND));
 
 		// 재녹화를 위해 녹화된 비디오가 있으면 제거
 		videoManageService.getSceneVideByRoomAndSceneOrder(
@@ -79,7 +81,7 @@ public class VideoService {
 	public void mergeSceneVideo(Long roomId) {
 		log.info("[mergeSceneVideo] called");
 		Room room = roomRepository.findById(roomId)
-			.orElseThrow(EntityNotFoundException::new);
+				.orElseThrow(() -> new BusinessException(ErrorCode.ROOM_NOT_FOUND));
 
 		List<SceneVideo> sceneVideos = videoManageService.getSceneVideoByRoom(room);
 		List<String> paths = sceneVideos.stream()
@@ -109,7 +111,7 @@ public class VideoService {
 	public void saveMemberVideos(Long roomId, Long videoId) {
 		log.info("[savedMemberVideos] called");
 		Room room = roomRepository.findById(roomId)
-			.orElseThrow(EntityNotFoundException::new);
+				.orElseThrow(() -> new BusinessException(ErrorCode.ROOM_NOT_FOUND));
 
 		List<Member> members = room
 			.getRoomMembers()

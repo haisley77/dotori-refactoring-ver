@@ -8,6 +8,8 @@ import java.util.stream.Collectors;
 
 import javax.persistence.EntityNotFoundException;
 
+import com.dotori.backend.common.exception.ErrorCode;
+import com.dotori.backend.common.exception.VideoException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -44,7 +46,7 @@ public class VideoManageService {
 	@Transactional
 	public VideoDto getVideo(Long videoId) {
 		Video video = videoRepository.findById(videoId)
-			.orElseThrow(() -> new EntityNotFoundException("해당하는 비디오가 존재하지 않습니다."));
+			.orElseThrow(() -> new VideoException(ErrorCode.VIDEO_NOT_FOUND));
 		return toVideoDto(video);
 	}
 
