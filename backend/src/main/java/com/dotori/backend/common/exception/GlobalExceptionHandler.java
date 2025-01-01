@@ -48,6 +48,20 @@ public class GlobalExceptionHandler {
 		);
 	}
 
+	@ExceptionHandler(BusinessException.class)
+	public ResponseEntity<ErrorResponse> customExceptionHandler(
+			HttpServletRequest request, BusinessException businessException) {
+		// 커스텀 예외 Logging
+		printCustomException(businessException);
+
+		// 서버 내부 에러 메시지를 클라이언트에 노출하지 않는다. (커스텀 에러 코드로 처리)
+		return new ResponseEntity<>(
+			ErrorResponse.of(businessException.getErrorCode().toString(), request.getRequestURI()),
+			INTERNAL_SERVER_ERROR
+		);
+
+	}
+
 	@ExceptionHandler(RuntimeException.class)
 	public ResponseEntity<ErrorResponse> runtimeExceptionHandler(
 		HttpServletRequest request, RuntimeException runtimeException
@@ -70,7 +84,11 @@ public class GlobalExceptionHandler {
 		);
 	}
 
+	private void printCustomException(BusinessException exception) {
+		log.info("Exception 발생: ", exception.getMessage());
+	}
+
 	private void printException(Exception exception) {
-		log.info("exception 발생: ", exception);
+		log.error("Exception 발생: ", exception);
 	}
 }
