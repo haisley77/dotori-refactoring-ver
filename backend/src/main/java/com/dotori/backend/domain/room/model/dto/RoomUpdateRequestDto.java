@@ -6,8 +6,11 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
 
+import javax.validation.constraints.NotNull;
+
 @Data
 @RequiredArgsConstructor
 public class RoomUpdateRequestDto {
-    private final Long roomId;
+    @NotNull
+    public final Long roomId;
 }

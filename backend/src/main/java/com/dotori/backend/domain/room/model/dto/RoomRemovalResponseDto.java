@@ -7,5 +7,5 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 public class RoomRemovalResponseDto {
-    private Long memberId;
+    public Long memberId;
 }

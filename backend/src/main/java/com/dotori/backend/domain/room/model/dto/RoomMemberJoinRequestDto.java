@@ -5,10 +5,17 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
 
+import javax.validation.constraints.NotNull;
+
 @Data
 @RequiredArgsConstructor
 public class RoomMemberJoinRequestDto {
-    private final Long roomId;
-    private final Long memberId;
-    private final Long bookId;
+    @NotNull
+    public final Long roomId;
+
+    @NotNull
+    public final Long memberId;
+
+    @NotNull
+    public final Long bookId;
 }
