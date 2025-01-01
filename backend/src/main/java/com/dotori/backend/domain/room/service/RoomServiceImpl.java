@@ -100,6 +100,14 @@ public class RoomServiceImpl implements RoomService {
         return roomRepository.findAllByOrderByIsRecordingAscCreatedAtDesc();
     }
 
+    public Room getRoom(Long roomId) {
+
+        Room room = roomRepository.findById(roomId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.ROOM_NOT_FOUND));
+
+        return room;
+    }
+
     @Override
     public String createConnection(OpenVidu openvidu, RoomConnectionRequestDto requestDto) {
 

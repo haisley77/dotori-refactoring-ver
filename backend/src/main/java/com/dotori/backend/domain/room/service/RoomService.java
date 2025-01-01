@@ -16,6 +16,7 @@ public interface RoomService {
 
 	RoomCreationResponseDto createRoom(OpenVidu openvidu, RoomCreationRequestDto requestDto);
 	List<Room> getAllRooms();
+	Room getRoom(Long roomId);
 	String createConnection(OpenVidu openvidu, RoomConnectionRequestDto requestDto);
 	Member joinMemberToRoom(OpenVidu openvidu, Long roomId, Long memberId, Long bookId);
 	Long removeMemberFromRoom(OpenVidu openvidu, Long roomId, Long memberId);

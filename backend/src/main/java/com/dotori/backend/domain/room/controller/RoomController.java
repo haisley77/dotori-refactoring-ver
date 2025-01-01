@@ -50,7 +50,6 @@ public class RoomController {
 	private final RoomService roomService;
 	private final BookService bookService;
 	private final SceneService sceneService;
-	private final RoomRepository roomRepository;
 
 	@PostConstruct
 	public void init() {
@@ -135,8 +134,7 @@ public class RoomController {
 	@GetMapping("/{roomId}")
 	public ResponseEntity<RoomResponseDto> getRoom(@PathVariable("roomId") Long roomId) {
 
-		Room room = roomRepository.findById(roomId)
-				.orElseThrow(() -> new EntityNotFoundException(("해당하는 방이 존재하지 않습니다.")));
+		Room room = roomService.getRoom(roomId);
 
 		RoomResponseDto result = new RoomResponseDto(room);
 
