@@ -78,7 +78,11 @@ public class RoomController {
 	@DeleteMapping("/remove-member")
 	public ResponseEntity<RoomRemovalResponseDto> removeRoomMember(
 			@RequestBody RoomRemovalRequestDto requestDto) {
-		RoomRemovalResponseDto result = roomService.removeMemberFromRoom(openvidu, requestDto.roomId, requestDto.memberId);
+
+		Long memberId = roomService.removeMemberFromRoom(openvidu, requestDto.roomId, requestDto.memberId);
+
+		RoomRemovalResponseDto result = new RoomRemovalResponseDto(memberId);
+
 		return ResponseEntity.ok(result);
 	}
 

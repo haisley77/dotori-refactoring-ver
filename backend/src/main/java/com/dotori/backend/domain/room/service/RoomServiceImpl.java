@@ -97,8 +97,7 @@ public class RoomServiceImpl implements RoomService {
     }
 
     public List<Room> getAllRooms() {
-        return roomRepository.findAllByOrderByIsRecordingAscCreatedAtDesc()
-                .orElseThrow(() -> new BusinessException(ErrorCode.ROOM_NOT_FOUND));
+        return roomRepository.findAllByOrderByIsRecordingAscCreatedAtDesc();
     }
 
     @Override
@@ -172,7 +171,7 @@ public class RoomServiceImpl implements RoomService {
     }
 
     @Override
-    public RoomRemovalResponseDto removeMemberFromRoom(OpenVidu openvidu, Long roomId, Long memberId) {
+    public Long removeMemberFromRoom(OpenVidu openvidu, Long roomId, Long memberId) {
 
         refreshOpenvidu(openvidu);
 
@@ -194,8 +193,7 @@ public class RoomServiceImpl implements RoomService {
             roomRepository.delete(room);
         }
 
-        RoomRemovalResponseDto roomRemovalResponseDto = new RoomRemovalResponseDto(memberId);
-        return roomRemovalResponseDto;
+        return memberId;
     }
 
     @Override
