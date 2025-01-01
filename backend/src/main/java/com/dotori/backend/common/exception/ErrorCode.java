@@ -17,6 +17,7 @@ public enum ErrorCode {
 
     // Book
     BOOK_NOT_FOUND("B-001", "Book Not Found"),
+    SCENE_NOT_FOUND("B-001", "Scene Not Found"),
 
     // Openvidu
     OPENVIDU_CONNECTION_NOT_CREATED("O-001", "Openvidu Connection Not Created"),

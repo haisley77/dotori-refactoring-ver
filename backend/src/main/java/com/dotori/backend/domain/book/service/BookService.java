@@ -6,6 +6,8 @@ import java.util.stream.Collectors;
 import javax.persistence.EntityNotFoundException;
 import javax.transaction.Transactional;
 
+import com.dotori.backend.common.exception.BusinessException;
+import com.dotori.backend.common.exception.ErrorCode;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
@@ -38,9 +40,8 @@ public class BookService {
 
 	@Cacheable(value = "book", key = "#bookId")
 	public BookDto getBook(Long bookId) {
-		Book book = bookRepository.findById(bookId).orElseThrow(
-			() -> new EntityNotFoundException("해당하는 책이 존재하지 않습니다.")
-		);
+		Book book = bookRepository.findById(bookId)
+				.orElseThrow(() -> new BusinessException(ErrorCode.BOOK_NOT_FOUND));
 
 		return BookMapper.toBookDto(book);
 	}

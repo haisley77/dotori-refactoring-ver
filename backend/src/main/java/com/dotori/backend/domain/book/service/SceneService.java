@@ -7,6 +7,8 @@ import java.util.List;
 
 import javax.persistence.EntityNotFoundException;
 
+import com.dotori.backend.common.exception.BusinessException;
+import com.dotori.backend.common.exception.ErrorCode;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -37,7 +39,7 @@ public class SceneService {
 	@Transactional(readOnly = true)
 	public SceneDetailDto getScene(Long sceneId) {
 		Scene scene = sceneRepository.findById(sceneId)
-			.orElseThrow(() -> new EntityNotFoundException("해당하는 scene이 존재하지 않습니다."));
+			.orElseThrow(() -> new BusinessException(ErrorCode.SCENE_NOT_FOUND));
 		return toSceneDetailDto(scene);
 	}
 
