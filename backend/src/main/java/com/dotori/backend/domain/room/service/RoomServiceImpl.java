@@ -10,6 +10,7 @@ import com.dotori.backend.common.exception.BusinessException;
 import com.dotori.backend.common.exception.ErrorCode;
 import com.dotori.backend.domain.room.model.dto.*;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import com.dotori.backend.domain.book.model.entity.Book;
@@ -30,6 +31,7 @@ import io.openvidu.java.client.Session;
 import io.openvidu.java.client.SessionProperties;
 
 @Service
+@Slf4j
 @RequiredArgsConstructor
 @Transactional
 public class RoomServiceImpl implements RoomService {
@@ -227,8 +229,11 @@ public class RoomServiceImpl implements RoomService {
                 .map(Session::getSessionId)
                 .collect(Collectors.toList());
 
-        roomRepository.deleteAllBySessionIdNotIn(activeSessionIdList);
+        int deletedCnt = roomRepository.deleteAllBySessionIdNotIn(activeSessionIdList);
+        log.info("[removeExpiredRooms] " + deletedCnt + " rooms deleted");
+
     }
+
 
     private void refreshOpenvidu(OpenVidu openvidu) {
         try {

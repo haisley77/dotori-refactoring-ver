@@ -10,5 +10,5 @@ import com.dotori.backend.domain.room.model.entity.Room;
 
 public interface RoomRepository extends JpaRepository<Room, Long> {
 	List<Room> findAllByOrderByIsRecordingAscCreatedAtDesc();
-	void deleteAllBySessionIdNotIn(List<String> activeSessionIdList);
+	int deleteAllBySessionIdNotIn(List<String> activeSessionIdList);
 }
