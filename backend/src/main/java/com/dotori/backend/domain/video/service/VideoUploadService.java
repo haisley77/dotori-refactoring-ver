@@ -95,7 +95,7 @@ public class VideoUploadService {
 			}
 		} catch (IOException e) {
 			log.info("[mergeChunkFiles] failed", e);
-			throw new VideoException(ErrorCode.CHUNK_FILES_NOT_UPLOADED);
+			throw new VideoException(ErrorCode.CHUNK_FILES_NOT_MERGED);
 		}
 		log.info("[mergeChunkFiles] completed scene video is merged");
 		return output;
