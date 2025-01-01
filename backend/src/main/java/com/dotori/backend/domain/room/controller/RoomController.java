@@ -7,6 +7,7 @@ import java.util.stream.Collectors;
 
 import javax.annotation.PostConstruct;
 import javax.persistence.EntityNotFoundException;
+import javax.validation.Valid;
 
 import com.dotori.backend.domain.member.model.entity.Member;
 import com.dotori.backend.domain.room.model.dto.*;
@@ -58,14 +59,14 @@ public class RoomController {
 
 	@PostMapping("/session")
 	public ResponseEntity<RoomCreationResponseDto> create(
-			@RequestBody RoomCreationRequestDto requestDto) {
+			@RequestBody @Valid RoomCreationRequestDto requestDto) {
 		RoomCreationResponseDto result = roomService.createRoom(openvidu, requestDto);
 		return ResponseEntity.ok(result);
 	}
 
 	@PostMapping("/connection")
 	public ResponseEntity<RoomConnectionResponseDto> connectionByRoomId(
-			@RequestBody RoomConnectionRequestDto requestDto) {
+			@RequestBody @Valid RoomConnectionRequestDto requestDto) {
 
 		String token = roomService.createConnection(openvidu, requestDto);
 
@@ -76,7 +77,7 @@ public class RoomController {
 
 	@DeleteMapping("/remove-member")
 	public ResponseEntity<RoomRemovalResponseDto> removeRoomMember(
-			@RequestBody RoomRemovalRequestDto requestDto) {
+			@RequestBody @Valid RoomRemovalRequestDto requestDto) {
 
 		Long memberId = roomService.removeMemberFromRoom(openvidu, requestDto.roomId, requestDto.memberId);
 
@@ -105,7 +106,7 @@ public class RoomController {
 
 	@PostMapping("/join-member")
 	public ResponseEntity<RoomMemberJoinResponseDto> joinRoomMember(
-			@RequestBody RoomMemberJoinRequestDto requestDto) {
+			@RequestBody @Valid RoomMemberJoinRequestDto requestDto) {
 
 		Member member = roomService.joinMemberToRoom(openvidu, requestDto.roomId, requestDto.memberId, requestDto.bookId);
 
@@ -122,7 +123,7 @@ public class RoomController {
 
 	@PatchMapping("/update-room")
 	public ResponseEntity<RoomUpdateResponseDto> updateRoom(
-			@RequestBody RoomUpdateRequestDto requestDto) {
+			@RequestBody @Valid RoomUpdateRequestDto requestDto) {
 
 		Room room = roomService.updateRoom(openvidu, requestDto.getRoomId());
 
