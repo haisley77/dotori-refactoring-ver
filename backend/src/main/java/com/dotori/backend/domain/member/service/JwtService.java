@@ -9,6 +9,11 @@ import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import com.auth0.jwt.exceptions.JWTVerificationException;
+import com.auth0.jwt.exceptions.TokenExpiredException;
+import com.dotori.backend.common.exception.BusinessException;
+import com.dotori.backend.common.exception.ErrorCode;
+import com.dotori.backend.common.exception.LoginException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseCookie;
 import org.springframework.stereotype.Service;
@@ -46,7 +51,6 @@ public class JwtService {
 	private static final String REFRESH_TOKEN_SUBJECT = "RefreshToken";
 	private static final String EMAIL_CLAIM = "email";
 	private static final String ROLE_CLAIM = "role";
-	private static final String BEARER = "Bearer ";
 
 	private final MemberRepository memberRepository;
 	private final RedisService redisService;
@@ -78,59 +82,70 @@ public class JwtService {
 	}
 
 	/**
-	 * AccessToken 쿠키로보내기
+	 * AccessToken 응답
 	 */
 	public void sendAccessToken(HttpServletResponse response, String accessToken) {
 		ResponseCookie cookie = ResponseCookie.from("accessToken", accessToken)
 			.httpOnly(true) // JavaScript 접근 방지
-			// .secure(true) // HTTPS에서만 전송
+			// .secure(true) // https 에서만 전송
 			.path("/") // 쿠키 경로
 			.sameSite("Lax") // SameSite 설정
-			.build(); // 쿠키 생성
+			.build();
 
-		response.addHeader("Set-Cookie", cookie.toString()); // 생성된 쿠키를 응답 헤더에 추가
-		log.info("AccessToken 쿠키에 설정 완료");
+		response.addHeader("Set-Cookie", cookie.toString());
+		log.info("[sendAccessToken] success");
 	}
 
 	/**
-	 * RefreshToken 쿠키로보내기
+	 * RefreshToken 응답
 	 */
 	public void sendRefreshToken(HttpServletResponse response, String refreshToken) {
 		ResponseCookie cookie = ResponseCookie.from("refreshToken", refreshToken)
 			.httpOnly(true) // JavaScript 접근 방지
-			// .secure(true) // HTTPS에서만 전송
-			.path("/api/members/reaccesstoken") // 쿠키 경로
-			.sameSite("Lax") // SameSite 설정
-			.build(); // 쿠키 생성
+			// .secure(true) // https 에서만 전송
+			.path("/api/members/reaccesstoken")
+			.sameSite("Lax")
+			.build();
 
-		response.addHeader("Set-Cookie", cookie.toString()); // 생성된 쿠키를 응답 헤더에 추가
-		log.info("RefreshToken 쿠키에 설정 완료");
+		response.addHeader("Set-Cookie", cookie.toString());
+		log.info("[sendRefreshToken] success");
 	}
 
 	/**
 	 * 쿠키에서 AccessToken 추출
-	 * 쿠키 배열을 순회하며, "accessToken"이라는 이름의 쿠키 값을 반환
 	 */
-	public Optional<String> extractAccessToken(HttpServletRequest request) {
-		if (request.getCookies() == null) {
-			return Optional.empty();
+	public String extractAccessToken(HttpServletRequest request) {
+		if (request.getCookies() != null) {
+			Optional<String> accessToken = Arrays.stream(request.getCookies())
+					.filter(cookie -> "accessToken".equals(cookie.getName()))
+					.findFirst()
+					.map(Cookie::getValue);
+
+			if (accessToken.isEmpty()) {
+				throw new LoginException(ErrorCode.REFRESH_TOKEN_NOT_FOUND);
+			}
+
+			return accessToken.get();
 		}
 
-		return Arrays.stream(request.getCookies())
-			.filter(cookie -> "accessToken".equals(cookie.getName()))
-			.findFirst()
-			.map(Cookie::getValue);
+		return null;
 	}
 
-	public Optional<String> extractRefreshToken(HttpServletRequest request) {
-		if (request.getCookies() == null) {
-			return Optional.empty();
+	public String extractRefreshToken(HttpServletRequest request) {
+		if (request.getCookies() != null) {
+			Optional<String> refreshToken = Arrays.stream(request.getCookies())
+					.filter(cookie -> "refreshToken".equals(cookie.getName()))
+					.findFirst()
+					.map(Cookie::getValue);
+
+			if (refreshToken.isEmpty()) {
+				throw new LoginException(ErrorCode.REFRESH_TOKEN_NOT_FOUND);
+			}
+
+			return refreshToken.get();
 		}
 
-		return Arrays.stream(request.getCookies())
-			.filter(cookie -> "refreshToken".equals(cookie.getName()))
-			.findFirst()
-			.map(Cookie::getValue);
+		return null;
 	}
 
 	/**
@@ -140,59 +155,75 @@ public class JwtService {
 	 * 유효하다면 getClaim()으로 이메일 추출
 	 * 유효하지 않다면 빈 Optional 객체 반환
 	 */
-	public Optional<String> extractEmail(String accessToken) {
+	public String extractEmail(String accessToken) {
 		try {
-			// 토큰 유효성 검사하는 데에 사용할 알고리즘이 있는 JWT verifier builder 반환
-			return Optional.ofNullable(JWT.require(Algorithm.HMAC512(secretKey))
-				.build() // 반환된 빌더로 JWT verifier 생성
-				.verify(accessToken) // accessToken을 검증하고 유효하지 않다면 예외 발생
-				.getClaim(EMAIL_CLAIM) // claim(Email) 가져오기
-				.asString());
-		} catch (Exception e) {
-			log.error("액세스 토큰이 유효하지 않습니다.");
-			return Optional.empty();
+			// accessToken 유효성 검증
+			String email = JWT.require(Algorithm.HMAC512(secretKey))
+				.build()
+				.verify(accessToken)
+				.getClaim(EMAIL_CLAIM)
+				.asString();
+
+			if (email == null) {
+				throw new BusinessException(ErrorCode.EMAIL_NOT_FOUND);
+			}
+
+			return email;
+
+		} catch (TokenExpiredException e) {
+			throw new LoginException(ErrorCode.ACCESS_TOKEN_EXPIRED);
+		} catch (JWTVerificationException e) {
+			throw new LoginException(ErrorCode.ACCESS_TOKEN_INVALID);
 		}
+
 	}
 
-	public Optional<String> extractRole(String accessToken) {
+	public String extractRole(String accessToken) {
 		try {
-			// 토큰 유효성 검사하는 데에 사용할 알고리즘이 있는 JWT verifier builder 반환
-			return Optional.ofNullable(JWT.require(Algorithm.HMAC512(secretKey))
+			// accessToken 유효성 검증
+			String role = JWT.require(Algorithm.HMAC512(secretKey))
 				.build()
 				.verify(accessToken) // accessToken을 검증하고 유효하지 않다면 예외 발생
 				.getClaim(ROLE_CLAIM) // claim(Role) 가져오기
-				.asString());
-		} catch (Exception e) {
-			log.error("액세스 토큰이 유효하지 않습니다.");
-			return Optional.empty();
+				.asString();
+
+			if (role == null || role.isEmpty()) {
+				throw new BusinessException(ErrorCode.ROLE_NOT_FOUND);
+			}
+
+			return role;
+
+		} catch (TokenExpiredException e) {
+			throw new LoginException(ErrorCode.ACCESS_TOKEN_EXPIRED);
+		} catch (JWTVerificationException e) {
+			throw new LoginException(ErrorCode.ACCESS_TOKEN_INVALID);
 		}
 	}
 
-	public Optional<String> extractEmailFromAccessToken(HttpServletRequest request) {
-		return extractAccessToken(request)
-			.flatMap(this::extractEmail);
+	public String extractEmailFromAccessToken(HttpServletRequest request) {
+		String accessToken = extractAccessToken(request);
+		return extractEmail(accessToken);
 	}
 
-	public Optional<String> extractroleFromAccessToken(HttpServletRequest request) {
-		return extractAccessToken(request)
-			.flatMap(this::extractRole);
+	public String extractRoleFromAccessToken(HttpServletRequest request) {
+		String accessToken = extractAccessToken(request);
+		return extractRole(accessToken);
 	}
 
-	public Optional<String> extractEmailFromRefreshToken(HttpServletRequest request) {
-		return extractRefreshToken(request)
-			.flatMap(this::extractEmail);
+	public String extractEmailFromRefreshToken(HttpServletRequest request) {
+		String refreshToken = extractRefreshToken(request);
+        return extractEmail(refreshToken);
 	}
 
-	public Optional<String> extractroleFromRefreshToken(HttpServletRequest request) {
-		return extractRefreshToken(request)
-			.flatMap(this::extractRole);
+	public String extractRoleFromRefreshToken(HttpServletRequest request) {
+        String refreshToken = extractRefreshToken(request);
+		return extractRole(refreshToken);
 	}
 
 	/**
-	 * RefreshToken을 Redis에 저장(업데이트)
+	 * refreshToken을 redis에 저장(업데이트)
 	 */
 	public void updateRefreshToken(String email, String refreshToken) {
-		// Redis에 리프레시 토큰 저장
 		redisService.saveRefreshToken(email, refreshToken, refreshTokenExpirationPeriod, TimeUnit.MILLISECONDS);
 	}
 
@@ -200,8 +231,11 @@ public class JwtService {
 		try {
 			JWT.require(Algorithm.HMAC512(secretKey)).build().verify(token);
 			return true;
-		} catch (Exception e) {
-			log.error("유효하지 않은 토큰입니다. {}", e.getMessage());
+		} catch (TokenExpiredException e) {
+			// 만료된 토큰
+			return false;
+		} catch (JWTVerificationException e) {
+			// 유효하지 않은 토큰
 			return false;
 		}
 	}
@@ -213,7 +247,7 @@ public class JwtService {
 		cookie.setSecure(true);
 		cookie.setPath("/");
 		response.addCookie(cookie);
-		log.info("AccessToken 쿠키 제거");
+		log.info("[removeAccessToken] success");
 	}
 
 	public void removeRefreshToken(HttpServletResponse response) {
@@ -223,6 +257,6 @@ public class JwtService {
 		cookie.setSecure(true);
 		cookie.setPath("/");
 		response.addCookie(cookie);
-		log.info("AccessToken 쿠키 제거");
+		log.info("[removeRefreshToken] success");
 	}
 }
