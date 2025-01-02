@@ -15,7 +15,6 @@ import javax.persistence.Enumerated;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.OneToMany;
-import javax.persistence.Table;
 
 import com.dotori.backend.common.entity.BaseTimeEntity;
 import com.dotori.backend.domain.member.model.Enum.Role;
@@ -31,34 +30,29 @@ import lombok.NoArgsConstructor;
 @Getter
 @Builder
 @NoArgsConstructor(access = PROTECTED)
-@Table(name = "member")
 @AllArgsConstructor
 public class Member extends BaseTimeEntity {
 	@Id
-	@Column(name = "member_id")
 	@GeneratedValue(strategy = IDENTITY)
 	private Long memberId;
 
-	@Column(name = "member_email")
 	private String email; // 이메일
 
 	@Column
 	private String nickname;
 
-	@Column(length = 100, name = "profile_img")
+	@Column(length = 100)
 	private String profileImg;
 
-	@Column(length = 255, name = "refresh_token")
+	@Column(length = 255)
 	private String refreshToken;
 
 	@Enumerated(EnumType.STRING)
 	private Role role;
 
 	@Enumerated(EnumType.STRING)
-	@Column(name = "social_type")
 	private SocialType socialType; // KAKAO, NAVER, GOOGLE
 
-	@Column(name = "social_id")
 	private String socialId;
 
 	@OneToMany(fetch = LAZY, mappedBy = "member", cascade = ALL)
@@ -70,12 +64,12 @@ public class Member extends BaseTimeEntity {
 	}
 
 	//== 유저 필드 업데이트 ==//
-	public void updateNickname(String updateNickname) {
-		this.nickname = updateNickname;
+	public static void updateNickname(Member member, String nickname) {
+		member.nickname = nickname;
 	}
 
-	public void updateProfileImg(String updateProfileImg) {
-		this.profileImg = updateProfileImg;
+	public static void updateProfileImg(Member member, String newProfileImg) {
+		member.profileImg = newProfileImg;
 	}
 
 	public void updateRefreshToken(String refreshToken) {
