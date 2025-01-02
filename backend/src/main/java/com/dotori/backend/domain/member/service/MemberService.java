@@ -7,7 +7,6 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import javax.persistence.EntityNotFoundException;
 import javax.transaction.Transactional;
 
 import org.springframework.stereotype.Service;
@@ -82,5 +81,16 @@ public class MemberService {
 		}
 		return result;
 	}
+
+	@Transactional
+	public String updateNickname(String email, String newNickname) {
+		Member member = memberRepository.findByEmail(email)
+				.orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
+
+		Member.updateNickname(member, newNickname);
+
+		return newNickname;
+	}
+
 }
 
