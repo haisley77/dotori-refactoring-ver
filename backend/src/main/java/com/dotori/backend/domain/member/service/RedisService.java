@@ -26,7 +26,7 @@ public class RedisService {
 	public void saveRefreshToken(String email, String refreshToken, long duration, TimeUnit timeUnit) {
 		String key = REFRESH_TOKEN_KEY_PREFIX + email;
 		redisTemplate.opsForValue().set(key, refreshToken, duration, timeUnit);
-		log.info("RefreshToken saved in Redis for email: {}", email);
+		log.info("[saveRefreshToken] success : {}", email);
 	}
 
 	public Optional<String> getRefreshToken(String email) {
@@ -37,7 +37,7 @@ public class RedisService {
 	public void removeRefreshToken(String email) {
 		String key = REFRESH_TOKEN_KEY_PREFIX + email;
 		redisTemplate.delete(key);
-		log.info("RefreshToken removed from Redis for email: {}", email);
+		log.info("[removeRefreshToken] success : {}", email);
 	}
 
 	// 블랙리스트에 토큰 추가
@@ -50,7 +50,7 @@ public class RedisService {
 		return redisTemplate.opsForSet().isMember(BLACKLIST_PREFIX, refreshToken);
 	}
 
-	//트래킹부분
+	// 트래킹
 	public void saveTrackingUserSession(String email, String token) {
 		if (email.equals("ssafy@gmail.com"))
 			return; //관리자 권한은 중복 허용
