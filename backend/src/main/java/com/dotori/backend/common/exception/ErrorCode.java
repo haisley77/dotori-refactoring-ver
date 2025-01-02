@@ -8,16 +8,18 @@ public enum ErrorCode {
     // Member
     MEMBER_NOT_FOUND("M-001", "Member Not Found"),
     PROFILE_IMG_NOT_UPDATED("M-002", "Profile Image Not Updated"),
-    ACCESS_TOKEN_NOT_FOUND("M-003", "AccessToken Not Found"),
-    ACCESS_TOKEN_INVALID("M-004", "AccessToken Invalid"),
-    ACCESS_TOKEN_EXPIRED("M-005", "AccessToken Expired"),
-    REFRESH_TOKEN_NOT_FOUND("M-006", "RefreshToken Not Found"),
-    REFRESH_TOKEN_INVALID("M-007", "RefreshToken Invalid"),
-    REFRESH_TOKEN_EXPIRED("M-008", "RefreshToken Expired"),
-    EMAIL_NOT_FOUND("M-009", "Member Email Not Found"),
-    ROLE_NOT_FOUND("M-010", "Member Role Not Found"),
-    COOKIE_NOT_FOUND("M-011", "Http Cookie Not Found"),
-    SESSION_OUT("M-012", "Login Session Out"),
+    EMAIL_NOT_FOUND("M-003", "Member Email Not Found"),
+    ROLE_NOT_FOUND("M-004", "Member Role Not Found"),
+
+    // Login
+    ACCESS_TOKEN_NOT_FOUND("L-001", "AccessToken Not Found"),
+    ACCESS_TOKEN_INVALID("L-002", "AccessToken Invalid"),
+    ACCESS_TOKEN_EXPIRED("L-003", "AccessToken Expired"),
+    REFRESH_TOKEN_NOT_FOUND("L-004", "RefreshToken Not Found"),
+    REFRESH_TOKEN_INVALID("L-005", "RefreshToken Invalid"),
+    REFRESH_TOKEN_EXPIRED("L-006", "RefreshToken Expired"),
+
+
 
     // Room
     ROOM_NOT_FOUND("R-001", "Room Not Found"),
