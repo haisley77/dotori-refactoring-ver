@@ -122,7 +122,7 @@ public class JwtService {
 					.map(Cookie::getValue);
 
 			if (accessToken.isEmpty()) {
-				throw new LoginException(ErrorCode.REFRESH_TOKEN_NOT_FOUND);
+				throw new LoginException(ErrorCode.ACCESS_TOKEN_NOT_FOUND);
 			}
 
 			return accessToken.get();
