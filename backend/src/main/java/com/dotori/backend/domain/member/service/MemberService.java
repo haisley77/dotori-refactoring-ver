@@ -9,6 +9,8 @@ import java.util.stream.Collectors;
 
 import javax.transaction.Transactional;
 
+import com.dotori.backend.common.exception.BusinessException;
+import com.dotori.backend.common.exception.ErrorCode;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -58,16 +60,16 @@ public class MemberService {
 		try {
 			profileImage.transferTo(updatedProfileImage);
 		} catch (IOException e) {
-			log.info("image save failed" + e);
-			throw new RuntimeException(e);
+			log.info("[updateProfileImage] failed " + e);
+			throw new BusinessException(ErrorCode.PROFILE_IMG_NOT_UPDATED);
 		}
 
 		String savedPath = pathProperty.getDOMAIN() + pathProperty.getPROFILE_IMAGE_DB_PATH() + savedName;
 
 		Member member = memberRepository.findByEmail(email)
-			.orElseThrow(EntityNotFoundException::new);
-		member.updateProfileImg(savedPath);
-		memberRepository.save(member);
+				.orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
+
+		Member.updateProfileImg(member, savedPath);
 
 		return savedPath;
 	}
