@@ -1,16 +1,14 @@
 package com.dotori.backend.domain.member.controller;
 
-import java.io.IOException;
 import java.util.*;
 
-import javax.persistence.EntityNotFoundException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import com.dotori.backend.common.exception.BusinessException;
 import com.dotori.backend.common.exception.ErrorCode;
-import com.dotori.backend.common.exception.MemberException;
+import com.dotori.backend.common.exception.LoginException;
 import com.dotori.backend.domain.member.model.dto.*;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -45,6 +43,7 @@ public class MemberController {
 
 	@GetMapping("/status")
 	public ResponseEntity<?> getAuthStatus() {
+
 		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
 		boolean isAnonymous = authentication instanceof AnonymousAuthenticationToken;
@@ -56,11 +55,10 @@ public class MemberController {
 	@GetMapping("/detail")
 	public ResponseEntity<?> getMemberInfo(HttpServletRequest request) {
 
-		String jwtDetail = jwtService.extractEmailFromAccessToken(request)
-				.orElseThrow(() -> new MemberException(ErrorCode.ACCESS_TOKEN_NOT_FOUND));
+		String email = jwtService.extractEmailFromAccessToken(request);
 
-		Member member = memberRepository.findByEmail(jwtDetail)
-				.orElseThrow(() -> new MemberException(ErrorCode.MEMBER_NOT_FOUND));
+		Member member = memberRepository.findByEmail(email)
+				.orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
 
 		MemberResponseDto result = new MemberResponseDto(member);
 		return ResponseEntity.ok(result);
@@ -77,70 +75,54 @@ public class MemberController {
 	}
 
 	@GetMapping("/reaccesstoken")
-	public ResponseEntity<?> reAccessToken(HttpServletRequest request, HttpServletResponse response) throws
-		IOException {
+	public ResponseEntity<?> reAccessToken(HttpServletRequest request, HttpServletResponse response) {
 
-		String refreshToken = jwtService.extractRefreshToken(request).orElse(null);
+		String email = jwtService.extractEmailFromRefreshToken(request);
 
-		Optional<String> jwtemail = jwtService.extractEmailFromRefreshToken(request);
-		Optional<String> jwtrole = jwtService.extractroleFromRefreshToken(request);
-		String email = jwtemail.get();
-		String role = jwtrole.get();
-		log.info("role:{}", role);
+		String redisRefreshToken = redisService.getRefreshToken(email)
+				.orElseThrow(() -> new LoginException(ErrorCode.REFRESH_TOKEN_NOT_FOUND));	// 재로그인
 
-		String redisrefreshToken = redisService.getRefreshToken(email).get();
-		log.info("refreshToken:{}", refreshToken);
-		log.info("redisrefreshToken:{}", redisrefreshToken);
-		if (redisrefreshToken != null) {
-			if (redisService.isBlacklisted(redisrefreshToken)) {
-				response.sendError(HttpStatus.UNAUTHORIZED.value(), "만료된 refresh 토큰입니다. 다시로그인해주세요");
-			} else {
-				if (refreshToken.equals(redisrefreshToken)) {
-					String accessToken = jwtService.createAccessToken(email, "USER"); //서비스확장시 role 부여수정필요
-					jwtService.sendAccessToken(response, accessToken);
-					return ResponseEntity.ok("accessToken:" + accessToken);
-				} else {
-					return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-						.body("유효하지않은 접근입니다. 다시 로그인해주세요.");
-				}
-			}
-		} else {
-			return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-				.body("만료된 refresh 토큰입니다. 다시 로그인해주세요.");
+		if (redisService.isBlacklisted(redisRefreshToken)) {
+			throw new LoginException(ErrorCode.REFRESH_TOKEN_EXPIRED);		// 재로그인
 		}
-		return ResponseEntity.ok("ok");
+
+		String refreshToken = jwtService.extractRefreshToken(request);
+
+		if (refreshToken == null) {
+			throw new LoginException(ErrorCode.REFRESH_TOKEN_NOT_FOUND);	// 재로그인
+		}
+
+		if (!refreshToken.equals(redisRefreshToken)) {
+			throw new LoginException(ErrorCode.REFRESH_TOKEN_INVALID);		// 재로그인
+		}
+
+		String accessToken = jwtService.createAccessToken(email, "USER");
+		jwtService.sendAccessToken(response, accessToken);
+		return ResponseEntity.ok().build();
+
 	}
 
-	@PutMapping("/update_nickname")
+	@PutMapping("/update-nickname")
 	public ResponseEntity<?> updateNickname(HttpServletRequest request,
 		@RequestParam("newNickname") String newNickname) {
-		// JWT에서 이메일 추출
-		Optional<String> jwtemail = jwtService.extractEmailFromAccessToken(request);
-		if (!jwtemail.isPresent()) {
-			return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-				.body("유효하지않거나 만료된 토큰입니다.");
-		}
 
-		// 사용자 정보 찾기 및 닉네임 업데이트
-		String email = jwtemail.get();
-		Member member = memberRepository.findByEmail(email)
-			.orElseThrow(() -> new EntityNotFoundException("해당이메일은 가입되지않은 이메일입니다: " + email));
+		String email = jwtService.extractEmailFromAccessToken(request);
 
-		member.updateNickname(newNickname);
-		memberRepository.save(member);
+		memberService.updateNickname(email, newNickname);
 
-		return ResponseEntity.ok("닉네임 변경완료.");
+		return ResponseEntity.ok().build();
 	}
 
 	@PutMapping(value = "/profile-image")
 	public ResponseEntity<ProfileImageUpdateResponse> updateProfileImg(HttpServletRequest request,
 		@Validated ProfileImageUpdateRequest profileImageUpdateRequest) {
-		// JWT에서 이메일 추출
-		Optional<String> emailOpt = jwtService.extractEmailFromAccessToken(request);
 
-		return ResponseEntity.ok()
-			.body(new ProfileImageUpdateResponse(
-				memberService.updateProfileImage(emailOpt.get(), profileImageUpdateRequest)));
+		String email = jwtService.extractEmailFromAccessToken(request);
+
+		String savedPath = memberService.updateProfileImage(email, profileImageUpdateRequest);
+
+		ProfileImageUpdateResponse result = new ProfileImageUpdateResponse(savedPath);
+		return ResponseEntity.ok(result);
 	}
 
 }
