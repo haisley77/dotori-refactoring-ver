@@ -18,6 +18,7 @@ public enum ErrorCode {
     REFRESH_TOKEN_NOT_FOUND("L-004", "RefreshToken Not Found"),
     REFRESH_TOKEN_INVALID("L-005", "RefreshToken Invalid"),
     REFRESH_TOKEN_EXPIRED("L-006", "RefreshToken Expired"),
+    ACCESS_NOT_ALLOWED("L-007", "Access Not Allowed"),
 
 
 
