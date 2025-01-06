@@ -13,7 +13,7 @@ import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
-public class LoginService implements UserDetailsService {
+public class PrincipalDetailsService implements UserDetailsService {
 
 	private final MemberRepository memberRepository;
 
