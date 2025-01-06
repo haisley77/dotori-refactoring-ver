@@ -143,7 +143,7 @@ public class SecurityConfig {
 	@Bean
 	public JwtAuthenticationProcessingFilter jwtAuthenticationProcessingFilter() {
 		JwtAuthenticationProcessingFilter jwtAuthenticationFilter =
-				new JwtAuthenticationProcessingFilter(jwtService, memberRepository, redisService);
+				new JwtAuthenticationProcessingFilter(jwtService, memberRepository);
 		return jwtAuthenticationFilter;
 	}
 

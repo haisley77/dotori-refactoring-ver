@@ -44,7 +44,6 @@ import lombok.extern.slf4j.Slf4j;
 public class JwtAuthenticationProcessingFilter extends OncePerRequestFilter {
 	private final JwtService jwtService;
 	private final MemberRepository memberRepository;
-	private final RedisService redisService;
 	private static final String NO_CHECK_URL = "/reaccesstoken";
 
 	@Override
