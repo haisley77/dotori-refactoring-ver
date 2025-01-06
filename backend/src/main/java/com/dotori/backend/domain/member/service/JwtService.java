@@ -13,7 +13,7 @@ import com.auth0.jwt.exceptions.JWTVerificationException;
 import com.auth0.jwt.exceptions.TokenExpiredException;
 import com.dotori.backend.common.exception.BusinessException;
 import com.dotori.backend.common.exception.ErrorCode;
-import com.dotori.backend.common.exception.LoginException;
+import com.dotori.backend.common.exception.AuthException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseCookie;
 import org.springframework.stereotype.Service;
@@ -122,7 +122,7 @@ public class JwtService {
 					.map(Cookie::getValue);
 
 			if (accessToken.isEmpty()) {
-				throw new LoginException(ErrorCode.ACCESS_TOKEN_NOT_FOUND);
+				throw new AuthException(ErrorCode.ACCESS_TOKEN_NOT_FOUND);
 			}
 
 			return accessToken.get();
@@ -139,7 +139,7 @@ public class JwtService {
 					.map(Cookie::getValue);
 
 			if (refreshToken.isEmpty()) {
-				throw new LoginException(ErrorCode.REFRESH_TOKEN_NOT_FOUND);
+				throw new AuthException(ErrorCode.REFRESH_TOKEN_NOT_FOUND);
 			}
 
 			return refreshToken.get();
@@ -171,9 +171,9 @@ public class JwtService {
 			return email;
 
 		} catch (TokenExpiredException e) {
-			throw new LoginException(ErrorCode.ACCESS_TOKEN_EXPIRED);
+			throw new AuthException(ErrorCode.ACCESS_TOKEN_EXPIRED);
 		} catch (JWTVerificationException e) {
-			throw new LoginException(ErrorCode.ACCESS_TOKEN_INVALID);
+			throw new AuthException(ErrorCode.ACCESS_TOKEN_INVALID);
 		}
 
 	}
@@ -194,9 +194,9 @@ public class JwtService {
 			return role;
 
 		} catch (TokenExpiredException e) {
-			throw new LoginException(ErrorCode.ACCESS_TOKEN_EXPIRED);
+			throw new AuthException(ErrorCode.ACCESS_TOKEN_EXPIRED);
 		} catch (JWTVerificationException e) {
-			throw new LoginException(ErrorCode.ACCESS_TOKEN_INVALID);
+			throw new AuthException(ErrorCode.ACCESS_TOKEN_INVALID);
 		}
 	}
 
