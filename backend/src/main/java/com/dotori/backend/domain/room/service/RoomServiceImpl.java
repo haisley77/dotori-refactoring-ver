@@ -3,9 +3,6 @@ package com.dotori.backend.domain.room.service;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import javax.persistence.EntityNotFoundException;
-import javax.transaction.Transactional;
-
 import com.dotori.backend.common.exception.BusinessException;
 import com.dotori.backend.common.exception.ErrorCode;
 import com.dotori.backend.domain.room.model.dto.*;
@@ -29,11 +26,12 @@ import io.openvidu.java.client.OpenViduHttpException;
 import io.openvidu.java.client.OpenViduJavaClientException;
 import io.openvidu.java.client.Session;
 import io.openvidu.java.client.SessionProperties;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @Slf4j
 @RequiredArgsConstructor
-@Transactional
+@Transactional(readOnly = true)
 public class RoomServiceImpl implements RoomService {
 
     private final RoomRepository roomRepository;
@@ -42,6 +40,7 @@ public class RoomServiceImpl implements RoomService {
     private final MemberRepository memberRepository;
 
     @Override
+    @Transactional
     public RoomCreationResponseDto createRoom(OpenVidu openvidu, RoomCreationRequestDto params) {
 
         // 책을 조회한다.
@@ -97,11 +96,12 @@ public class RoomServiceImpl implements RoomService {
 
         return openvidu.getActiveSession(room.getSessionId());
     }
-
+    @Override
     public List<Room> getAllRooms() {
         return roomRepository.findAllByOrderByIsRecordingAscCreatedAtDesc();
     }
 
+    @Override
     public Room getRoom(Long roomId) {
 
         Room room = roomRepository.findById(roomId)
@@ -111,6 +111,7 @@ public class RoomServiceImpl implements RoomService {
     }
 
     @Override
+    @Transactional
     public String createConnection(OpenVidu openvidu, RoomConnectionRequestDto requestDto) {
 
         // 방을 조회한다.
@@ -158,6 +159,7 @@ public class RoomServiceImpl implements RoomService {
     }
 
     @Override
+    @Transactional
     public Member joinMemberToRoom(OpenVidu openvidu, Long roomId, Long memberId, Long bookId) {
 
         // 방을 조회한다.
@@ -181,6 +183,7 @@ public class RoomServiceImpl implements RoomService {
     }
 
     @Override
+    @Transactional
     public Long removeMemberFromRoom(OpenVidu openvidu, Long roomId, Long memberId) {
 
         refreshOpenvidu(openvidu);
@@ -207,6 +210,7 @@ public class RoomServiceImpl implements RoomService {
     }
 
     @Override
+    @Transactional
     public Room updateRoom(OpenVidu openvidu, Long roomId) {
 
         refreshOpenvidu(openvidu);
@@ -219,6 +223,7 @@ public class RoomServiceImpl implements RoomService {
     }
 
     @Override
+    @Transactional
     public void removeExpiredRooms(OpenVidu openvidu) {
 
         refreshOpenvidu(openvidu);
