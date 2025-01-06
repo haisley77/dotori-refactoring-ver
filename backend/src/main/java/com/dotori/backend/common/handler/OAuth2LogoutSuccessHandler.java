@@ -1,6 +1,5 @@
 package com.dotori.backend.common.handler;
 
-import java.io.IOException;
 import java.util.Optional;
 
 import javax.servlet.http.HttpServletRequest;
@@ -35,8 +34,9 @@ public class OAuth2LogoutSuccessHandler implements LogoutSuccessHandler {
 		jwtService.removeRefreshToken(response);
 
 		if (!accessTokenOpt.isEmpty()) {
-			String email = jwtService.extractEmailFromAccessToken(accessTokenOpt.get());
-			if (!email.isEmpty()) {
+			Optional<String> emailOpt = jwtService.extractEmailFromAccessToken(accessTokenOpt.get());
+			if (!emailOpt.isEmpty()) {
+				String email = emailOpt.get();
 				// 로그아웃 전 refreshToken 블랙리스트 처리
 				Optional<String> refreshTokenOpt = redisService.getRefreshToken(email);
 				if (!refreshTokenOpt.isEmpty()) {
