@@ -15,10 +15,12 @@ public enum ErrorCode {
     ACCESS_TOKEN_NOT_FOUND("L-001", "AccessToken Not Found"),
     ACCESS_TOKEN_INVALID("L-002", "AccessToken Invalid"),
     ACCESS_TOKEN_EXPIRED("L-003", "AccessToken Expired"),
-    REFRESH_TOKEN_NOT_FOUND("L-004", "RefreshToken Not Found"),
-    REFRESH_TOKEN_INVALID("L-005", "RefreshToken Invalid"),
-    REFRESH_TOKEN_EXPIRED("L-006", "RefreshToken Expired"),
-    ACCESS_NOT_ALLOWED("L-007", "Access Not Allowed"),
+
+    // 재로그인 필요
+    REFRESH_TOKEN_NOT_FOUND("RT-001", "RefreshToken Not Found"),
+    REFRESH_TOKEN_INVALID("RT-002", "RefreshToken Invalid"),
+    REFRESH_TOKEN_EXPIRED("RT-003", "RefreshToken Expired"),
+    ACCESS_NOT_ALLOWED("L-004", "Access Not Allowed"),
 
 
 

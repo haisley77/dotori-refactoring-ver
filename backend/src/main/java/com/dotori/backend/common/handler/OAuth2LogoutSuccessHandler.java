@@ -29,12 +29,8 @@ public class OAuth2LogoutSuccessHandler implements LogoutSuccessHandler {
 
 		Optional<String> accessTokenOpt = jwtService.extractAccessToken(request);
 
-		// 쿠키에서 accessToken 제거
-		jwtService.removeAccessToken(response);
-		jwtService.removeRefreshToken(response);
-
 		if (!accessTokenOpt.isEmpty()) {
-			Optional<String> emailOpt = jwtService.extractEmailFromAccessToken(accessTokenOpt.get());
+			Optional<String> emailOpt = jwtService.extractEmailFromAccessToken(request, response, accessTokenOpt.get());
 			if (!emailOpt.isEmpty()) {
 				String email = emailOpt.get();
 				// 로그아웃 전 refreshToken 블랙리스트 처리
@@ -45,6 +41,10 @@ public class OAuth2LogoutSuccessHandler implements LogoutSuccessHandler {
 				}
 			}
 		}
+
+		// 쿠키에서 accessToken 제거
+		jwtService.removeAccessToken(response);
+		jwtService.removeRefreshToken(response);
 
 		log.info("[onLogoutSuccess] success");
 		// 클라이언트에 로그아웃 완료 응답

@@ -2,8 +2,6 @@ package com.dotori.backend.common.handler;
 
 import java.io.IOException;
 
-import javax.persistence.EntityNotFoundException;
-import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -19,7 +17,6 @@ import com.dotori.backend.domain.member.model.dto.auth.CustomOAuth2User;
 import com.dotori.backend.domain.member.model.entity.Member;
 import com.dotori.backend.domain.member.repository.MemberRepository;
 import com.dotori.backend.domain.member.service.JwtService;
-import com.dotori.backend.domain.member.service.RedisService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -59,8 +56,8 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
 		member.updateRefreshToken(refreshToken);
 		memberRepository.save(member);	// Transactional 처리가 되어있지 않으므로 더티 체킹 X -> save 직접 호출
 
-		jwtService.sendAccessToken(response, accessToken);
-		jwtService.sendRefreshToken(response, refreshToken);
+		jwtService.addAccessTokenToCookie(response, accessToken);
+		jwtService.addRefreshTokenToCookie(response, refreshToken);
 
 		jwtService.updateRefreshToken(oAuth2User.getEmail(), refreshToken);
 

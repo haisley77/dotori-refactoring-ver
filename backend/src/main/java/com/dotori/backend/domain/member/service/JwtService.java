@@ -84,7 +84,7 @@ public class JwtService {
 	/**
 	 * AccessToken 응답
 	 */
-	public void sendAccessToken(HttpServletResponse response, String accessToken) {
+	public void addAccessTokenToCookie(HttpServletResponse response, String accessToken) {
 		ResponseCookie cookie = ResponseCookie.from("accessToken", accessToken)
 			.httpOnly(true) // JavaScript 접근 방지
 			// .secure(true) // https 에서만 전송
@@ -99,7 +99,7 @@ public class JwtService {
 	/**
 	 * RefreshToken 응답
 	 */
-	public void sendRefreshToken(HttpServletResponse response, String refreshToken) {
+	public void addRefreshTokenToCookie(HttpServletResponse response, String refreshToken) {
 		ResponseCookie cookie = ResponseCookie.from("refreshToken", refreshToken)
 			.httpOnly(true) // JavaScript 접근 방지
 			// .secure(true) // https 에서만 전송
@@ -164,12 +164,13 @@ public class JwtService {
 
 	}
 
-	public Optional<String> extractEmailFromAccessToken(String token) {
+	public Optional<String> extractEmailFromAccessToken(HttpServletRequest request, HttpServletResponse response, String token) {
 		try {
 			isTokenValid(token);
 		} catch (TokenExpiredException e) {
-			throw new AuthException(ErrorCode.ACCESS_TOKEN_EXPIRED);
+			reIssueAccessToken(request, response);
 		} catch (JWTVerificationException e) {
+			// accessToken을 재발급하지 않을 것 (유효하지 않은 accessToken)
 			throw new AuthException(ErrorCode.ACCESS_TOKEN_INVALID);
 		}
 
@@ -179,11 +180,27 @@ public class JwtService {
 		else return Optional.empty();
 	}
 
-	public Optional<String> extractRoleFromAccessToken(String token) {
+	private void reIssueAccessToken(HttpServletRequest request, HttpServletResponse response) {
+		String refreshToken = extractRefreshToken(request)
+				.orElseThrow(() -> new AuthException(ErrorCode.REFRESH_TOKEN_NOT_FOUND));
+
+		String email = extractEmailFromRefreshToken(refreshToken)
+				.orElseThrow(() -> new BusinessException(ErrorCode.EMAIL_NOT_FOUND));
+
+		String role = extractRoleFromRefreshToken(refreshToken)
+				.orElseThrow(() -> new BusinessException(ErrorCode.ROLE_NOT_FOUND));
+
+		String newAccessToken = createAccessToken(email, role);
+		// accessToken을 재발급 할 것 (accessToken 만료)
+		addAccessTokenToCookie(response, newAccessToken);
+
+	}
+
+	public Optional<String> extractRoleFromAccessToken(HttpServletRequest request, HttpServletResponse response, String token) {
 		try {
 			isTokenValid(token);
 		} catch (TokenExpiredException e) {
-			throw new AuthException(ErrorCode.ACCESS_TOKEN_EXPIRED);
+			reIssueAccessToken(request, response);
 		} catch (JWTVerificationException e) {
 			throw new AuthException(ErrorCode.ACCESS_TOKEN_INVALID);
 		}
@@ -198,14 +215,29 @@ public class JwtService {
 		try {
 			isTokenValid(token);
 		} catch (TokenExpiredException e) {
-			throw new AuthException(ErrorCode.REFRESH_TOKEN_EXPIRED);
+			throw new AuthException(ErrorCode.REFRESH_TOKEN_EXPIRED);	// 재로그인
 		} catch (JWTVerificationException e) {
-			throw new AuthException(ErrorCode.REFRESH_TOKEN_INVALID);
+			throw new AuthException(ErrorCode.REFRESH_TOKEN_INVALID);	// 재로그인
 		}
 
 		Optional<String> emailOpt = extractEmail(token);
 
 		if (emailOpt.isPresent()) return emailOpt;
+		else return Optional.empty();
+	}
+
+	private Optional<String> extractRoleFromRefreshToken(String token) {
+		try {
+			isTokenValid(token);
+		} catch (TokenExpiredException e) {
+			throw new AuthException(ErrorCode.REFRESH_TOKEN_EXPIRED);	// 재로그인
+		} catch (JWTVerificationException e) {
+			throw new AuthException(ErrorCode.REFRESH_TOKEN_INVALID);	// 재로그인
+		}
+
+		Optional<String> roleOpt = extractRole(token);
+
+		if (roleOpt.isPresent()) return roleOpt;
 		else return Optional.empty();
 	}
 

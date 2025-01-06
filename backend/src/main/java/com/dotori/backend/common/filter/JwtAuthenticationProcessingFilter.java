@@ -60,10 +60,10 @@ public class JwtAuthenticationProcessingFilter extends OncePerRequestFilter {
 		if (accessTokenOpt.isPresent()) {
 			String accessToken = accessTokenOpt.get();
 
-			String email = jwtService.extractEmailFromAccessToken(accessToken)
+			String email = jwtService.extractEmailFromAccessToken(request, response, accessToken)
 					.orElseThrow(() -> new BusinessException(ErrorCode.EMAIL_NOT_FOUND));
 
-			String role = jwtService.extractRoleFromAccessToken(accessToken)
+			String role = jwtService.extractRoleFromAccessToken(request, response, accessToken)
 					.orElseThrow(() -> new BusinessException(ErrorCode.ROLE_NOT_FOUND));
 
 			Member member = memberRepository.findByEmail(email)
