@@ -55,7 +55,11 @@ public class MemberController {
 	@GetMapping("/detail")
 	public ResponseEntity<?> getMemberInfo(HttpServletRequest request) {
 
-		String email = jwtService.extractEmailFromAccessToken(request);
+		String accessToken = jwtService.extractAccessToken(request)
+				.orElseThrow(() -> new AuthException(ErrorCode.ACCESS_TOKEN_NOT_FOUND));
+
+		String email = jwtService.extractEmailFromAccessToken(accessToken)
+				.orElseThrow(() -> new BusinessException(ErrorCode.EMAIL_NOT_FOUND));
 
 		Member member = memberRepository.findByEmail(email)
 				.orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
@@ -77,7 +81,11 @@ public class MemberController {
 	@GetMapping("/reaccesstoken")
 	public ResponseEntity<?> reAccessToken(HttpServletRequest request, HttpServletResponse response) {
 
-		String email = jwtService.extractEmailFromRefreshToken(request);
+		String refreshToken = jwtService.extractRefreshToken(request)
+				.orElseThrow(() -> new AuthException(ErrorCode.REFRESH_TOKEN_NOT_FOUND));
+
+		String email = jwtService.extractEmailFromRefreshToken(refreshToken)
+				.orElseThrow(() -> new BusinessException(ErrorCode.EMAIL_NOT_FOUND));
 
 		String redisRefreshToken = redisService.getRefreshToken(email)
 				.orElseThrow(() -> new AuthException(ErrorCode.REFRESH_TOKEN_NOT_FOUND));	// 재로그인
@@ -86,18 +94,13 @@ public class MemberController {
 			throw new AuthException(ErrorCode.REFRESH_TOKEN_EXPIRED);		// 재로그인
 		}
 
-		String refreshToken = jwtService.extractRefreshToken(request);
-
-		if (refreshToken == null) {
-			throw new AuthException(ErrorCode.REFRESH_TOKEN_NOT_FOUND);	// 재로그인
-		}
-
 		if (!refreshToken.equals(redisRefreshToken)) {
 			throw new AuthException(ErrorCode.REFRESH_TOKEN_INVALID);		// 재로그인
 		}
 
 		String accessToken = jwtService.createAccessToken(email, "USER");
 		jwtService.sendAccessToken(response, accessToken);
+
 		return ResponseEntity.ok().build();
 
 	}
@@ -106,7 +109,11 @@ public class MemberController {
 	public ResponseEntity<?> updateNickname(HttpServletRequest request,
 		@RequestParam("newNickname") String newNickname) {
 
-		String email = jwtService.extractEmailFromAccessToken(request);
+		String accessToken = jwtService.extractAccessToken(request)
+				.orElseThrow(() -> new AuthException(ErrorCode.ACCESS_TOKEN_NOT_FOUND));
+
+		String email = jwtService.extractEmailFromAccessToken(accessToken)
+				.orElseThrow(() -> new BusinessException(ErrorCode.EMAIL_NOT_FOUND));
 
 		memberService.updateNickname(email, newNickname);
 
@@ -117,7 +124,11 @@ public class MemberController {
 	public ResponseEntity<ProfileImageUpdateResponse> updateProfileImg(HttpServletRequest request,
 		@Validated ProfileImageUpdateRequest profileImageUpdateRequest) {
 
-		String email = jwtService.extractEmailFromAccessToken(request);
+		String accessToken = jwtService.extractAccessToken(request)
+				.orElseThrow(() -> new AuthException(ErrorCode.ACCESS_TOKEN_NOT_FOUND));
+
+		String email = jwtService.extractEmailFromAccessToken(accessToken)
+				.orElseThrow(() -> new BusinessException(ErrorCode.EMAIL_NOT_FOUND));
 
 		String savedPath = memberService.updateProfileImage(email, profileImageUpdateRequest);
 
