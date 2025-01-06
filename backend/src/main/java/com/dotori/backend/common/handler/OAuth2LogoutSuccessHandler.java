@@ -26,29 +26,29 @@ public class OAuth2LogoutSuccessHandler implements LogoutSuccessHandler {
 
 	@Override
 	public void onLogoutSuccess(HttpServletRequest request, HttpServletResponse response,
-		Authentication authentication) throws IOException {
+		Authentication authentication) {
+
 		Optional<String> accessTokenOpt = jwtService.extractAccessToken(request);
 
-		accessTokenOpt.ifPresent(token -> {
-			// 쿠키에서 accessToken 제거
-			jwtService.removeAccessToken(response);
-			jwtService.removeRefreshToken(response);
-			// Email 추출 후 Redis에서 refreshToken 블랙리스트 처리
-			//(블랙리스트:해당 리프레쉬토큰은 로그아웃처리가 끝난토큰이므로 후에 요청이와도 재사용되면안됨)
-			jwtService.extractEmail(token).ifPresent(email -> {
-				Optional<String> refreshTokenOpt = redisService.getRefreshToken(email);
-				refreshTokenOpt.ifPresent(refreshToken -> {
-					// 블랙리스트에 추가
-					redisService.addToBlacklist(refreshToken);
-					// Redis에서 refreshToken 제거
-					redisService.removeRefreshToken(email);
-				});
-			});
-		});
+		// 쿠키에서 accessToken 제거
+		jwtService.removeAccessToken(response);
+		jwtService.removeRefreshToken(response);
 
+		if (!accessTokenOpt.isEmpty()) {
+			String email = jwtService.extractEmailFromAccessToken(accessTokenOpt.get());
+			if (!email.isEmpty()) {
+				// 로그아웃 전 refreshToken 블랙리스트 처리
+				Optional<String> refreshTokenOpt = redisService.getRefreshToken(email);
+				if (!refreshTokenOpt.isEmpty()) {
+					redisService.addToBlacklist(refreshTokenOpt.get());
+					redisService.removeRefreshToken(email);
+				}
+			}
+		}
+
+		log.info("[onLogoutSuccess] success");
 		// 클라이언트에 로그아웃 완료 응답
 		response.setStatus(HttpServletResponse.SC_OK);
-		// response.getWriter().print("로그아웃 완료");
 
 	}
 
