@@ -55,16 +55,16 @@ public class GlobalExceptionHandler {
 //		throw new LoginException(ErrorCode.MEMBER_NOT_FOUND);
 //	}
 
-	@ExceptionHandler(LoginException.class)
+	@ExceptionHandler(AuthException.class)
 	public ResponseEntity<ErrorResponse> loginExceptionHandler(
-			HttpServletRequest request, LoginException loginException
+			HttpServletRequest request, AuthException authException
 	) {
-		// 로그인 관련 예외 Logging
-		printCustomException(loginException);
+		// 인증 관련 예외 Logging
+		printCustomException(authException);
 
 		// 서버 내부 에러 메시지를 클라이언트에 노출하지 않는다. (커스텀 에러 코드로 처리)
 		return new ResponseEntity<>(
-				ErrorResponse.of(loginException.getErrorCode().toString(), request.getRequestURI()),
+				ErrorResponse.of(authException.getErrorCode().toString(), request.getRequestURI()),
 				UNAUTHORIZED
 		);
 	}
