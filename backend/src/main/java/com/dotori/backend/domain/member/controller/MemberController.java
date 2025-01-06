@@ -7,7 +7,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import com.dotori.backend.common.exception.BusinessException;
 import com.dotori.backend.common.exception.ErrorCode;
-import com.dotori.backend.common.exception.LoginException;
+import com.dotori.backend.common.exception.AuthException;
 import com.dotori.backend.domain.member.model.dto.*;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
@@ -80,20 +80,20 @@ public class MemberController {
 		String email = jwtService.extractEmailFromRefreshToken(request);
 
 		String redisRefreshToken = redisService.getRefreshToken(email)
-				.orElseThrow(() -> new LoginException(ErrorCode.REFRESH_TOKEN_NOT_FOUND));	// 재로그인
+				.orElseThrow(() -> new AuthException(ErrorCode.REFRESH_TOKEN_NOT_FOUND));	// 재로그인
 
 		if (redisService.isBlacklisted(redisRefreshToken)) {
-			throw new LoginException(ErrorCode.REFRESH_TOKEN_EXPIRED);		// 재로그인
+			throw new AuthException(ErrorCode.REFRESH_TOKEN_EXPIRED);		// 재로그인
 		}
 
 		String refreshToken = jwtService.extractRefreshToken(request);
 
 		if (refreshToken == null) {
-			throw new LoginException(ErrorCode.REFRESH_TOKEN_NOT_FOUND);	// 재로그인
+			throw new AuthException(ErrorCode.REFRESH_TOKEN_NOT_FOUND);	// 재로그인
 		}
 
 		if (!refreshToken.equals(redisRefreshToken)) {
-			throw new LoginException(ErrorCode.REFRESH_TOKEN_INVALID);		// 재로그인
+			throw new AuthException(ErrorCode.REFRESH_TOKEN_INVALID);		// 재로그인
 		}
 
 		String accessToken = jwtService.createAccessToken(email, "USER");
