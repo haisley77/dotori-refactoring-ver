@@ -1,7 +1,7 @@
 package com.dotori.backend.common.config;
 
-import javax.servlet.http.HttpServletResponse;
-
+import com.dotori.backend.common.exception.ErrorCode;
+import com.dotori.backend.common.exception.AuthException;
 import org.apache.hc.core5.http.HttpHeaders;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -74,17 +74,17 @@ public class SecurityConfig {
 			// 로그인은 항상 접근가능
 
 			// api 제한
-			.antMatchers("/api/members/update_nickname", "/api/members/profile-image",
+			.antMatchers("/api/members/update-nickname", "/api/members/profile-image",
 				"/api/members/{memberId}/videos")
 			.hasRole("USER")
 
-			// 페이지접근 제한
+			// 페이지 접근 제한
 			.antMatchers("/my-page", "/my-page/info", "/my-page/collection", "/my-page/avatar")
 			.hasRole("USER")
 			.anyRequest()
 			.authenticated() // 위의 경로 이외에는 모두 인증된 사용자만 접근 가능
 
-			//예외핸들러
+			//예외 핸들러
 			.and()
 			.exceptionHandling()
 			.authenticationEntryPoint(authenticationEntryPoint())
@@ -136,15 +136,14 @@ public class SecurityConfig {
 	private AuthenticationEntryPoint authenticationEntryPoint() {
 		return (request, response, authException) -> {
 			// 인증되지 않은 사용자의 요청 처리 로직
-			// 예: 로그인 페이지로 리다이렉트 또는 오류 메시지 응답
-			response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "접근이 거절되었습니다.");
+			throw new AuthException(ErrorCode.ACCESS_NOT_ALLOWED);
 		};
 	}
 
 	@Bean
 	public JwtAuthenticationProcessingFilter jwtAuthenticationProcessingFilter() {
-		JwtAuthenticationProcessingFilter jwtAuthenticationFilter = new JwtAuthenticationProcessingFilter(jwtService,
-			memberRepository, redisService);
+		JwtAuthenticationProcessingFilter jwtAuthenticationFilter =
+				new JwtAuthenticationProcessingFilter(jwtService, memberRepository, redisService);
 		return jwtAuthenticationFilter;
 	}
 
